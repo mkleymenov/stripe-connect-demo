@@ -14,4 +14,3 @@ plugins {
 
 rootProject.name = "stripe-connect-demo"
 include("server")
-include("web")
