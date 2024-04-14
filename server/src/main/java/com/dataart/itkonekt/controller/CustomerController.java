@@ -11,26 +11,26 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CustomerController {
-    private static final String CUSTOMER_HOME_PAGE = "http://localhost:8080/customer/";
+  private static final String CUSTOMER_HOME_PAGE = "http://localhost:8080/customer/";
 
-    private final CustomerRepository customerRepository;
-    private final StripeApi stripeApi;
+  private final CustomerRepository customerRepository;
+  private final StripeApi stripeApi;
 
-    @Autowired
-    public CustomerController(CustomerRepository customerRepository, StripeApi stripeApi) {
-        this.customerRepository = customerRepository;
-        this.stripeApi = stripeApi;
-    }
+  @Autowired
+  public CustomerController(CustomerRepository customerRepository, StripeApi stripeApi) {
+    this.customerRepository = customerRepository;
+    this.stripeApi = stripeApi;
+  }
 
-    @PostMapping("/customer")
-    public ResponseEntity<?> createCustomer(@RequestParam String email) {
-        // TODO
-        return ResponseEntity.noContent().build();
-    }
+  @PostMapping("/customer")
+  public ResponseEntity<?> createCustomer(@RequestParam String email) {
+    // TODO
+    return ResponseEntity.noContent().build();
+  }
 
-    @PostMapping("/customer/{customerId}/checkout")
-    public ResponseEntity<?> createCheckoutSession(@PathVariable("customerId") Integer customerId) {
-        // TODO:
-        return ResponseEntity.noContent().build();
-    }
+  @PostMapping("/customer/{customerId}/checkout")
+  public ResponseEntity<?> createCheckoutSession(@PathVariable("customerId") Integer customerId) {
+    // TODO:
+    return ResponseEntity.noContent().build();
+  }
 }

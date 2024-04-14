@@ -2,6 +2,7 @@ package com.dataart.itkonekt.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -12,59 +13,92 @@ import java.util.StringJoiner;
 @Entity
 @Table(name = "merchant")
 public class Merchant {
-    @Id
-    @GeneratedValue
-    private Integer id;
+  public enum Status {
+    REJECTED,
+    PENDING,
+    IN_REVIEW,
+    ACTIVE
+  }
 
-    @Column(name = "email")
-    private String email;
+  @Id
+  @GeneratedValue
+  private Integer id;
 
-    @Column(name = "stripe_account_id")
-    private String stripeAccountId;
+  @Column
+  private String email;
 
-    public Integer getId() {
-        return id;
-    }
+  @Column(name = "business_name")
+  private String businessName;
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
+  @Column(name = "stripe_account_id")
+  private String stripeAccountId;
 
-    public String getEmail() {
-        return email;
-    }
+  @Column
+  @Enumerated
+  private Status status;
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+  public Integer getId() {
+    return id;
+  }
 
-    public String getStripeAccountId() {
-        return stripeAccountId;
-    }
+  public void setId(Integer id) {
+    this.id = id;
+  }
 
-    public void setStripeAccountId(String stripeAccountId) {
-        this.stripeAccountId = stripeAccountId;
-    }
+  public String getEmail() {
+    return email;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Merchant merchant = (Merchant) o;
-        return Objects.equals(id, merchant.id) && Objects.equals(email, merchant.email) && Objects.equals(stripeAccountId, merchant.stripeAccountId);
-    }
+  public void setEmail(String email) {
+    this.email = email;
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, email, stripeAccountId);
-    }
+  public String getBusinessName() {
+    return businessName;
+  }
 
-    @Override
-    public String toString() {
-        return new StringJoiner(", ", Merchant.class.getSimpleName() + "[", "]")
-                .add("id=" + id)
-                .add("email='" + email + "'")
-                .add("stripeAccountId='" + stripeAccountId + "'")
-                .toString();
-    }
+  public void setBusinessName(String businessName) {
+    this.businessName = businessName;
+  }
+
+  public String getStripeAccountId() {
+    return stripeAccountId;
+  }
+
+  public void setStripeAccountId(String stripeAccountId) {
+    this.stripeAccountId = stripeAccountId;
+  }
+
+  public Status getStatus() {
+    return status;
+  }
+
+  public void setStatus(Status status) {
+    this.status = status;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Merchant merchant = (Merchant) o;
+    return Objects.equals(id, merchant.id) && Objects.equals(email, merchant.email) && Objects.equals(businessName,
+        merchant.businessName) && Objects.equals(stripeAccountId, merchant.stripeAccountId) && status == merchant.status;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, email, businessName, stripeAccountId, status);
+  }
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", Merchant.class.getSimpleName() + "[", "]")
+        .add("id=" + id)
+        .add("email='" + email + "'")
+        .add("businessName='" + businessName + "'")
+        .add("stripeAccountId='" + stripeAccountId + "'")
+        .add("status=" + status)
+        .toString();
+  }
 }
