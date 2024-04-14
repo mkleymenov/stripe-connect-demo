@@ -1,23 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
-import Home from './Home';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import Customer from './customer/Customer';
-import Merchant from './merchant/Merchant';
+import './index.css';
+import Customer from './routes/Customer';
+import Merchant, { merchantLoader } from './routes/Merchant';
+import LayoutRoute from './routes/Layout';
+import Home, { loginAction } from './routes/Home';
+import Error from './routes/Error';
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <Home />,
-  },
-  {
-    path: 'customer',
-    element: <Customer />,
-  },
-  {
-    path: 'merchant',
-    element: <Merchant />,
+    element: <LayoutRoute />,
+    errorElement: <Error />,
+    children: [
+      { path: '/', element: <Home />, action: loginAction },
+      { path: '/merchant/:id', element: <Merchant />, loader: merchantLoader },
+      { path: '/customer/:id', element: <Customer /> },
+    ],
   },
 ]);
 
