@@ -66,6 +66,15 @@ public class MerchantController {
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
+  @PostMapping("/merchant/{merchantId}/session")
+  public ResponseEntity<?> createAccountSession(@PathVariable("merchantId") Integer merchantId) {
+    return merchantRepository.findById(merchantId)
+        .map(Merchant::getStripeAccountId)
+        .flatMap(stripeApi::createConnectAccountSession)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
+  }
+
   private Optional<Merchant> createMerchant(CreateMerchantAccountRequest request) {
     var merchant = merchantRepository.save(toMerchant(request));
 

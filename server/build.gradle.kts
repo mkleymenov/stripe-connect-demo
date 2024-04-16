@@ -24,7 +24,7 @@ dependencies {
     runtimeOnly("com.h2database:h2")
 
     // Stripe SDK
-    implementation("com.stripe:stripe-java:24.7.0")
+    implementation("com.stripe:stripe-java:25.2.0")
 }
 
 testing {

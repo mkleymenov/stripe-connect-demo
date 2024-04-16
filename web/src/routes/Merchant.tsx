@@ -1,13 +1,49 @@
-import { FC } from 'react';
+import { loadConnectAndInitialize } from '@stripe/connect-js';
+import {
+  ConnectComponentsProvider,
+  ConnectPayments,
+} from '@stripe/react-connect-js';
+import { FC, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { LoaderFunction, useLoaderData } from 'react-router-dom';
-import { getMerchant } from '../api-routes';
+import { createSession, getMerchant } from '../api-routes';
 import GoToStripeButton from '../components/GoToStripeButton';
+import MerchantStatusCard, {
+  Props as MerchantStatusCardProps,
+} from '../components/MerchantStatusCard';
+
+type MerchantStatus = 'REJECTED' | 'PENDING' | 'IN_REVIEW' | 'ACTIVE';
 
 type Merchant = {
   id: number;
   businessName: string;
-  status: 'REJECTED' | 'PENDING' | 'IN_REVIEW' | 'ACTIVE';
+  status: MerchantStatus;
+};
+
+const MERCHANT_STATUS_CARDS: Record<MerchantStatus, MerchantStatusCardProps> = {
+  ACTIVE: {
+    title: 'You are fully set up!',
+    subtitle: 'Go to Stripe to manage your merchant account.',
+    style: 'success',
+  },
+  IN_REVIEW: {
+    title: 'Your account is in review.',
+    subtitle:
+      'We are reviewing your business information. Once the review is completed, you will be able to receive payments.',
+    style: 'info',
+  },
+  PENDING: {
+    title: 'We need more information about your business.',
+    subtitle:
+      'Please go to Stripe to provide additional information about your business.',
+    style: 'info',
+  },
+  REJECTED: {
+    title: 'Your merchant account has been blocked.',
+    subtitle:
+      'Sorry, but your business does not meet our eligibility criteria. Please reach out to the customer support for details.',
+    style: 'error',
+  },
 };
 
 export const merchantLoader: LoaderFunction = async ({ params }) => {
@@ -28,53 +64,27 @@ export const merchantLoader: LoaderFunction = async ({ params }) => {
   throw new Response('Merchant not found', { status: 404 });
 };
 
-const MerchantAccountRejected = () => (
-  <div>
-    <h2>Your merchant account has been blocked.</h2>
-    <p>
-      Sorry, but your business does not meet our eligibility criteria. Please
-      reach out to the customer support for details.
-    </p>
-  </div>
-);
-
-const MerchantAccountPending = ({ merchantId }: { merchantId: number }) => (
-  <div>
-    <h2>We need more information about your business.</h2>
-    <p>
-      Please go to Stripe to provide additional information about your business.
-    </p>
-    <p>
-      <GoToStripeButton merchantId={merchantId} type="onboarding" />
-    </p>
-  </div>
-);
-
-const MerchantAccountInReview = () => (
-  <div>
-    <h2>Your account is in review.</h2>
-    <p>
-      We are reviewing your business information. Once the review is completed,
-      you will be able to receive payments.
-    </p>
-  </div>
-);
-
-const MerchantAccountActive = ({ merchantId }: { merchantId: number }) => (
-  <div>
-    <h2>You are fully set up!</h2>
-    <p>
-      Go to Stripe to see payments you received and edit information about your
-      business.
-    </p>
-    <p>
-      <GoToStripeButton merchantId={merchantId} type={'dashboard'} />
-    </p>
-  </div>
-);
-
 const MerchantRoute: FC = () => {
   const { id, businessName, status } = useLoaderData() as Merchant;
+  const { title, subtitle, style } = MERCHANT_STATUS_CARDS[status];
+
+  const [stripeConnect] = useState(() => {
+    const fetchSecret = async () => {
+      const response = await fetch(createSession(id.toString()), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.ok) {
+        return await response.text();
+      }
+      return '';
+    };
+
+    return loadConnectAndInitialize({
+      publishableKey: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
+      fetchClientSecret: fetchSecret,
+    });
+  });
 
   return (
     <>
@@ -82,12 +92,30 @@ const MerchantRoute: FC = () => {
         <title>{businessName}</title>
       </Helmet>
 
-      <h1>{businessName}</h1>
+      <h1 className="text-3xl text-grey-primary mb-4">{businessName}</h1>
 
-      {status === 'REJECTED' && <MerchantAccountRejected />}
-      {status === 'PENDING' && <MerchantAccountPending merchantId={id} />}
-      {status === 'IN_REVIEW' && <MerchantAccountInReview />}
-      {status === 'ACTIVE' && <MerchantAccountActive merchantId={id} />}
+      <ConnectComponentsProvider connectInstance={stripeConnect}>
+        <MerchantStatusCard
+          title={title}
+          subtitle={subtitle}
+          style={style}
+          className="my-2"
+        >
+          {status === 'PENDING' && (
+            <GoToStripeButton merchantId={id} type="onboarding" />
+          )}
+          {status === 'ACTIVE' && (
+            <GoToStripeButton merchantId={id} type="dashboard" />
+          )}
+        </MerchantStatusCard>
+
+        {['PENDING', 'ACTIVE'].includes(status) && (
+          <div>
+            <h2 className="text-2xl font-medium">Payments</h2>
+            <ConnectPayments />
+          </div>
+        )}
+      </ConnectComponentsProvider>
     </>
   );
 };

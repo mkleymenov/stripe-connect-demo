@@ -1,5 +1,7 @@
 package com.dataart.itkonekt;
 
+import com.stripe.StripeClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +22,11 @@ public class App {
             .exposedHeaders("Location");
       }
     };
+  }
+
+  @Bean
+  public StripeClient stripeClient(@Value("#{environment['STRIPE_API_KEY']}") String apiKey) {
+    return new StripeClient(apiKey);
   }
 
   public static void main(String[] args) {

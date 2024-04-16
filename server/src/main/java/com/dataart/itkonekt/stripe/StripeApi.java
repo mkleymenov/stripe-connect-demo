@@ -2,19 +2,20 @@ package com.dataart.itkonekt.stripe;
 
 import com.dataart.itkonekt.entity.Merchant;
 import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Account;
 import com.stripe.model.AccountLink;
+import com.stripe.model.AccountSession;
 import com.stripe.model.Event;
 import com.stripe.model.LoginLink;
 import com.stripe.model.StripeObject;
-import com.stripe.net.RequestOptions;
-import com.stripe.net.Webhook;
 import com.stripe.param.AccountCreateParams;
 import com.stripe.param.AccountLinkCreateParams;
-import com.stripe.param.LoginLinkCreateOnAccountParams;
+import com.stripe.param.AccountSessionCreateParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,12 +25,12 @@ import java.util.Optional;
 public class StripeApi {
   private static final Logger LOG = LoggerFactory.getLogger(StripeApi.class);
 
-  private final RequestOptions requestOptions;
+  private final StripeClient stripeClient;
   private final String webhookSecret;
 
-  public StripeApi(@Value("#{environment['STRIPE_API_KEY']}") String apiKey,
+  public StripeApi(@Autowired StripeClient stripeClient,
                    @Value("#{environment['STRIPE_WEBHOOK_SECRET']}") String webhookSecret) {
-    this.requestOptions = RequestOptions.builder().setApiKey(apiKey).build();
+    this.stripeClient = stripeClient;
     this.webhookSecret = webhookSecret;
   }
 
@@ -48,7 +49,7 @@ public class StripeApi {
           .putMetadata("merchant_id", merchant.getId().toString())
           .build();
 
-      return Optional.of(Account.create(params, requestOptions)).map(Account::getId);
+      return Optional.of(stripeClient.accounts().create(params)).map(Account::getId);
     } catch (StripeException ex) {
       LOG.error("Couldn't create Stripe account for merchant {}", merchant.getId(), ex);
       return Optional.empty();
@@ -64,7 +65,7 @@ public class StripeApi {
           .setReturnUrl(returnUrl)
           .build();
 
-      return Optional.of(AccountLink.create(params, requestOptions)).map(AccountLink::getUrl);
+      return Optional.of(stripeClient.accountLinks().create(params)).map(AccountLink::getUrl);
     } catch (StripeException ex) {
       LOG.error("Couldn't create onboarding link for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
@@ -73,17 +74,35 @@ public class StripeApi {
 
   public Optional<String> createConnectDashboardLink(String stripeAccountId) {
     try {
-      return Optional.of(LoginLink.createOnAccount(stripeAccountId, LoginLinkCreateOnAccountParams.builder()
-          .build(), requestOptions)).map(LoginLink::getUrl);
+      return Optional.of(stripeClient.accounts().loginLinks().create(stripeAccountId)).map(LoginLink::getUrl);
     } catch (StripeException ex) {
       LOG.error("Couldn't create login link for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
     }
   }
 
+  public Optional<String> createConnectAccountSession(String stripeAccountId) {
+    try {
+      var params = AccountSessionCreateParams.builder()
+          .setAccount(stripeAccountId)
+          .setComponents(AccountSessionCreateParams.Components.builder()
+              .setPayments(AccountSessionCreateParams.Components.Payments.builder().setEnabled(true).build())
+              .setNotificationBanner(AccountSessionCreateParams.Components.NotificationBanner.builder()
+                  .setEnabled(true)
+                  .build())
+              .build())
+          .build();
+
+      return Optional.of(stripeClient.accountSessions().create(params)).map(AccountSession::getClientSecret);
+    } catch (StripeException ex) {
+      LOG.error("Couldn't create session for Stripe account {}", stripeAccountId, ex);
+      return Optional.empty();
+    }
+  }
+
   public Optional<Event> verifyEvent(String payload, String signature) {
     try {
-      return Optional.ofNullable(Webhook.constructEvent(payload, signature, webhookSecret));
+      return Optional.ofNullable(stripeClient.constructEvent(payload, signature, webhookSecret));
     } catch (StripeException ex) {
       LOG.error("Couldn't verify Stripe event '{}'. Signature: '{}'", payload, signature, ex);
       return Optional.empty();

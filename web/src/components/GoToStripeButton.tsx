@@ -39,7 +39,12 @@ const GoToStripeButton = ({ merchantId, type }: Props) => {
     <button
       type="button"
       onClick={onClick}
-      className={cn({ 'opacity-90 cursor-wait': submitted })}
+      className={cn(
+        'p-2 cursor-pointer font-medium uppercase rounded text-accent bg-green-dark hover:bg-opacity-90 hover:border-opacity-90',
+        {
+          'cursor-wait': submitted,
+        },
+      )}
       disabled={submitted}
     >
       Go to Stripe
