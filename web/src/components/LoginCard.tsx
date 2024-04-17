@@ -12,6 +12,16 @@ const LoginCardComponent = ({ title, type }: Props) => (
     </h2>
 
     <Form method="POST" className="flex flex-col justify-center gap-4">
+      {type === 'customer' && (
+        <input
+          className="rounded px-1 py-2 text-center border border-green-dark"
+          name="name"
+          type="text"
+          placeholder="Full Name"
+          required
+        />
+      )}
+
       {type === 'merchant' && (
         <input
           className="rounded px-1 py-2 text-center border border-green-dark"

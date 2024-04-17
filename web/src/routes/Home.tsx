@@ -2,31 +2,32 @@ import React, { FC } from 'react';
 import LoginCard from '../components/LoginCard';
 import { Helmet } from 'react-helmet';
 import { ActionFunction, redirect } from 'react-router-dom';
-import { createMerchant } from '../api-routes';
+import { createCustomer, createMerchant } from '../api-routes';
 
 export const loginAction: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
-  const { type, email, businessName } = Object.fromEntries(formData);
+  const { type, name, email, businessName } = Object.fromEntries(formData);
 
-  if (type === 'merchant') {
-    const response = await fetch(createMerchant(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, businessName }),
-    });
+  const url = type === 'customer' ? createCustomer() : createMerchant();
+  const payload =
+    type === 'customer' ? { name, email } : { businessName, email };
 
-    if (response.status === 201) {
-      response.headers.forEach((value, key) => console.log(`${key}: ${value}`));
-      const merchantUrl = response.headers.get('Location');
-      if (merchantUrl) {
-        return redirect(merchantUrl);
-      }
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (response.status === 201) {
+    const redirectUrl = response.headers.get('Location');
+    if (redirectUrl) {
+      return redirect(redirectUrl);
     }
-
-    throw new Response('', { status: 500 });
   }
+
+  throw new Response('', { status: 500 });
 };
 
 const HomeRoute: FC = () => {

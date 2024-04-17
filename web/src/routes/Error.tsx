@@ -32,16 +32,18 @@ const ErrorRoute = () => {
   const error = useRouteError();
 
   return (
-    <>
+    <main className="h-full flex flex-col justify-center">
       <Helmet>
         <title>{getErrorTitle(error)}</title>
       </Helmet>
 
       <div className="text-center">
-        <h1 className="text-grey-primary font-bold text-xl">Oops!</h1>
-        <h2 className="text-grey-secondary">{getErrorMessage(error)}</h2>
+        <h1 className="text-grey-primary text-3xl mb-4">Oops!</h1>
+        <h2 className="text-grey-secondary text-xl">
+          {getErrorMessage(error)}
+        </h2>
       </div>
-    </>
+    </main>
   );
 };
 

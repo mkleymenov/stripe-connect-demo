@@ -1,5 +1,6 @@
 package com.dataart.itkonekt.stripe;
 
+import com.dataart.itkonekt.entity.Customer;
 import com.dataart.itkonekt.entity.Merchant;
 import com.stripe.Stripe;
 import com.stripe.StripeClient;
@@ -10,15 +11,19 @@ import com.stripe.model.AccountSession;
 import com.stripe.model.Event;
 import com.stripe.model.LoginLink;
 import com.stripe.model.StripeObject;
+import com.stripe.model.billingportal.Session;
 import com.stripe.param.AccountCreateParams;
 import com.stripe.param.AccountLinkCreateParams;
 import com.stripe.param.AccountSessionCreateParams;
+import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.billingportal.SessionCreateParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -96,6 +101,35 @@ public class StripeApi {
       return Optional.of(stripeClient.accountSessions().create(params)).map(AccountSession::getClientSecret);
     } catch (StripeException ex) {
       LOG.error("Couldn't create session for Stripe account {}", stripeAccountId, ex);
+      return Optional.empty();
+    }
+  }
+
+  public Optional<String> createCustomer(Customer customer) {
+    try {
+      var params = CustomerCreateParams.builder()
+          .setName(customer.getName())
+          .setEmail(customer.getEmail())
+          .setMetadata(Map.of("customer_id", customer.getId().toString()))
+          .build();
+
+      return Optional.of(stripeClient.customers().create(params)).map(com.stripe.model.Customer::getId);
+    } catch (StripeException ex) {
+      LOG.error("Couldn't create Stripe customer for app customer {}", customer.getId(), ex);
+      return Optional.empty();
+    }
+  }
+
+  public Optional<String> createBillingPortalSession(String stripeCustomerId, String returnUrl) {
+    try {
+      var params = SessionCreateParams.builder()
+          .setCustomer(stripeCustomerId)
+          .setReturnUrl(returnUrl)
+          .build();
+
+      return Optional.of(stripeClient.billingPortal().sessions().create(params)).map(Session::getUrl);
+    } catch (StripeException ex) {
+      LOG.error("Couldn't create billing portal session for Stripe customer {}", stripeCustomerId, ex);
       return Optional.empty();
     }
   }

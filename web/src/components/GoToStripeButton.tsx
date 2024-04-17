@@ -1,23 +1,34 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import cn from 'classnames';
-import { createDashboardLink, createOnboardingLink } from '../api-routes';
+import {
+  createBillingPortalLink,
+  createDashboardLink,
+  createOnboardingLink,
+} from '../api-routes';
 
 type Props = {
-  merchantId: number;
-  type: 'onboarding' | 'dashboard';
+  userId: number;
+  type: 'onboarding' | 'dashboard' | 'billing_portal';
 };
 
-const GoToStripeButton = ({ merchantId, type }: Props) => {
+const GoToStripeButton = ({ userId, type }: Props) => {
   const [submitted, setSubmitted] = useState(false);
+
+  const url = useMemo(() => {
+    const id = userId.toString();
+    switch (type) {
+      case 'onboarding':
+        return createOnboardingLink(id);
+      case 'dashboard':
+        return createDashboardLink(id);
+      case 'billing_portal':
+        return createBillingPortalLink(id);
+    }
+  }, [userId, type]);
 
   const onClick = useCallback(async () => {
     if (!submitted) {
       setSubmitted(true);
-
-      const url =
-        type === 'onboarding'
-          ? createOnboardingLink(merchantId.toString())
-          : createDashboardLink(merchantId.toString());
 
       try {
         const response = await fetch(url, {
@@ -33,7 +44,7 @@ const GoToStripeButton = ({ merchantId, type }: Props) => {
         setSubmitted(false);
       }
     }
-  }, [merchantId, setSubmitted, submitted, type]);
+  }, [setSubmitted, submitted]);
 
   return (
     <button

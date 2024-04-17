@@ -17,7 +17,10 @@ public class Customer {
   @GeneratedValue
   private Integer id;
 
-  @Column(name = "email")
+  @Column
+  private String name;
+
+  @Column
   private String email;
 
   @Column(name = "stripe_customer_id")
@@ -29,6 +32,14 @@ public class Customer {
 
   public void setId(Integer id) {
     this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 
   public String getEmail() {
@@ -52,18 +63,20 @@ public class Customer {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Customer customer = (Customer) o;
-    return Objects.equals(id, customer.id) && Objects.equals(email, customer.email) && Objects.equals(stripeCustomerId, customer.stripeCustomerId);
+    return Objects.equals(id, customer.id) && Objects.equals(name, customer.name) && Objects.equals(email,
+        customer.email) && Objects.equals(stripeCustomerId, customer.stripeCustomerId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, email, stripeCustomerId);
+    return Objects.hash(id, name, email, stripeCustomerId);
   }
 
   @Override
   public String toString() {
     return new StringJoiner(", ", Customer.class.getSimpleName() + "[", "]")
         .add("id=" + id)
+        .add("name='" + name + "'")
         .add("email='" + email + "'")
         .add("stripeCustomerId='" + stripeCustomerId + "'")
         .toString();

@@ -102,10 +102,10 @@ const MerchantRoute: FC = () => {
           className="my-2"
         >
           {status === 'PENDING' && (
-            <GoToStripeButton merchantId={id} type="onboarding" />
+            <GoToStripeButton userId={id} type="onboarding" />
           )}
           {status === 'ACTIVE' && (
-            <GoToStripeButton merchantId={id} type="dashboard" />
+            <GoToStripeButton userId={id} type="dashboard" />
           )}
         </MerchantStatusCard>
 
