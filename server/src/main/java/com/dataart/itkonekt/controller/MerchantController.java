@@ -1,6 +1,7 @@
 package com.dataart.itkonekt.controller;
 
 import com.dataart.itkonekt.entity.Merchant;
+import com.dataart.itkonekt.model.CreateMerchantAccountRequest;
 import com.dataart.itkonekt.repository.MerchantRepository;
 import com.dataart.itkonekt.stripe.StripeApi;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +19,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping(consumes = "application/json", produces = "application/json")
 public class MerchantController {
-  public record CreateMerchantAccountRequest(String email, String businessName) {
-  }
-
   private static final String MERCHANT_HOME_PAGE = "http://localhost:3000/merchant/";
 
   private final MerchantRepository merchantRepository;
@@ -32,23 +30,23 @@ public class MerchantController {
     this.stripeApi = stripeApi;
   }
 
-  @PostMapping(value = "/merchant")
+  @PostMapping(value = "/merchants")
   public ResponseEntity<?> createMerchantAccount(@RequestBody CreateMerchantAccountRequest request) {
-    return merchantRepository.findByEmail(request.email)
+    return merchantRepository.findByEmail(request.email())
         .or(() -> createMerchant(request))
         .map(Merchant::getId)
         .map(merchantId -> ResponseEntity.created(URI.create(getMerchantHomeUrl(merchantId))).build())
         .orElseGet(() -> ResponseEntity.internalServerError().build());
   }
 
-  @GetMapping("/merchant/{merchantId}")
+  @GetMapping("/merchants/{merchantId}")
   public ResponseEntity<?> getMerchantAccount(@PathVariable("merchantId") Integer merchantId) {
     return merchantRepository.findById(merchantId)
         .map(ResponseEntity::ok)
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
-  @PostMapping("/merchant/{merchantId}/onboarding")
+  @PostMapping("/merchants/{merchantId}/onboarding")
   public ResponseEntity<?> createOnboardingLink(@PathVariable("merchantId") Integer merchantId) {
     return merchantRepository.findById(merchantId)
         .flatMap(merchant -> stripeApi.createConnectOnboardingLink(merchant.getStripeAccountId(),
@@ -57,7 +55,7 @@ public class MerchantController {
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
-  @PostMapping("/merchant/{merchantId}/dashboard")
+  @PostMapping("/merchants/{merchantId}/dashboard")
   public ResponseEntity<?> createDashboardLink(@PathVariable("merchantId") Integer merchantId) {
     return merchantRepository.findById(merchantId)
         .map(Merchant::getStripeAccountId)
@@ -66,7 +64,7 @@ public class MerchantController {
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
-  @PostMapping("/merchant/{merchantId}/session")
+  @PostMapping("/merchants/{merchantId}/session")
   public ResponseEntity<?> createAccountSession(@PathVariable("merchantId") Integer merchantId) {
     return merchantRepository.findById(merchantId)
         .map(Merchant::getStripeAccountId)
@@ -87,8 +85,8 @@ public class MerchantController {
 
   private static Merchant toMerchant(CreateMerchantAccountRequest request) {
     var merchant = new Merchant();
-    merchant.setEmail(request.email);
-    merchant.setBusinessName(request.businessName);
+    merchant.setEmail(request.email());
+    merchant.setBusinessName(request.businessName());
     merchant.setStatus(Merchant.Status.PENDING);
     return merchant;
   }

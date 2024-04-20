@@ -2,6 +2,7 @@ package com.dataart.itkonekt.stripe;
 
 import com.dataart.itkonekt.entity.Customer;
 import com.dataart.itkonekt.entity.Merchant;
+import com.dataart.itkonekt.model.CreateProductRequest;
 import com.stripe.Stripe;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
@@ -10,12 +11,18 @@ import com.stripe.model.AccountLink;
 import com.stripe.model.AccountSession;
 import com.stripe.model.Event;
 import com.stripe.model.LoginLink;
+import com.stripe.model.Price;
+import com.stripe.model.Product;
 import com.stripe.model.StripeObject;
 import com.stripe.model.billingportal.Session;
 import com.stripe.param.AccountCreateParams;
 import com.stripe.param.AccountLinkCreateParams;
 import com.stripe.param.AccountSessionCreateParams;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.PriceCreateParams;
+import com.stripe.param.PriceListParams;
+import com.stripe.param.PriceUpdateParams;
+import com.stripe.param.ProductCreateParams;
 import com.stripe.param.billingportal.SessionCreateParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +32,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Service
 public class StripeApi {
@@ -131,6 +140,83 @@ public class StripeApi {
     } catch (StripeException ex) {
       LOG.error("Couldn't create billing portal session for Stripe customer {}", stripeCustomerId, ex);
       return Optional.empty();
+    }
+  }
+
+  public Stream<Price> listActivePrices(Optional<Integer> merchantId) {
+    try {
+      var params = PriceListParams.builder().setActive(true).addExpand("data.product");
+      merchantId.map(Object::toString).ifPresent(params::addLookupKey);
+
+      return StreamSupport.stream(stripeClient.prices().list(params.build()).autoPagingIterable().spliterator(), false);
+    } catch (StripeException ex) {
+      LOG.error("Couldn't fetch prices from Stripe", ex);
+      return Stream.empty();
+    }
+  }
+
+  public Optional<Price> findMerchantPrice(Integer merchantId) {
+    try {
+      var params = PriceListParams.builder().setActive(true).addLookupKey(merchantId.toString()).build();
+
+      return stripeClient.prices().list(params).getData().stream().findFirst();
+    } catch (StripeException ex) {
+      LOG.error("Couldn't list prices for merchant {}", merchantId, ex);
+      return Optional.empty();
+    }
+  }
+
+  public Optional<String> createMerchantProduct(Merchant merchant) {
+    try {
+      var params = ProductCreateParams.builder()
+          .setName(merchant.getBusinessName())
+          .putMetadata("merchant_id", merchant.getId().toString())
+          .build();
+
+      return Optional.of(stripeClient.products().create(params)).map(Product::getId);
+    } catch (StripeException ex) {
+      LOG.error("Couldn't create product for merchant {}", merchant.getId(), ex);
+      return Optional.empty();
+    }
+  }
+
+  public Optional<Price> createPrice(String stripeProductId, CreateProductRequest request) {
+    try {
+      var params = PriceCreateParams.builder()
+          .setProduct(stripeProductId)
+          .setBillingScheme(PriceCreateParams.BillingScheme.PER_UNIT)
+          .setUnitAmount(request.price())
+          .setCurrency(request.currency())
+          .setLookupKey(request.merchantId().toString())
+          .setTransferLookupKey(true)
+          .addExpand("product");
+
+      request.recurrence()
+          .map(recurrence -> PriceCreateParams.Recurring.builder()
+              .setIntervalCount(recurrence.intervalCount())
+              .setInterval(switch (recurrence.interval()) {
+                case DAY -> PriceCreateParams.Recurring.Interval.DAY;
+                case WEEK -> PriceCreateParams.Recurring.Interval.WEEK;
+                case MONTH -> PriceCreateParams.Recurring.Interval.MONTH;
+                case YEAR -> PriceCreateParams.Recurring.Interval.YEAR;
+              })
+              .build())
+          .ifPresent(params::setRecurring);
+
+      return Optional.of(stripeClient.prices().create(params.build()));
+    } catch (StripeException ex) {
+      LOG.error("Couldn't create price for product {} and merchant {}", stripeProductId, request.merchantId(), ex);
+      return Optional.empty();
+    }
+  }
+
+  public void disablePrice(String stripePriceId) {
+    try {
+      var params = PriceUpdateParams.builder().setActive(false).build();
+
+      stripeClient.prices().update(stripePriceId, params);
+    } catch (StripeException ex) {
+      LOG.error("Couldn't update price {}", stripePriceId, ex);
     }
   }
 

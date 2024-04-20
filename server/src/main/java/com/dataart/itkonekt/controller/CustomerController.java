@@ -1,6 +1,7 @@
 package com.dataart.itkonekt.controller;
 
 import com.dataart.itkonekt.entity.Customer;
+import com.dataart.itkonekt.model.CreateCustomerRequest;
 import com.dataart.itkonekt.repository.CustomerRepository;
 import com.dataart.itkonekt.stripe.StripeApi;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +19,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping(consumes = "application/json", produces = "application/json")
 public class CustomerController {
-  public record CreateCustomerRequest(String name, String email) {
-  }
-
   private static final String CUSTOMER_HOME_PAGE = "http://localhost:3000/customer/";
 
   private final CustomerRepository customerRepository;
@@ -32,29 +30,29 @@ public class CustomerController {
     this.stripeApi = stripeApi;
   }
 
-  @PostMapping("/customer")
+  @PostMapping("/customers")
   public ResponseEntity<?> createCustomerAccount(@RequestBody CreateCustomerRequest request) {
-    return customerRepository.findByEmail(request.email)
+    return customerRepository.findByEmail(request.email())
         .or(() -> createCustomer(request))
         .map(Customer::getId)
         .map(id -> ResponseEntity.created(URI.create(getCustomerHomeUrl(id))).build())
         .orElseGet(() -> ResponseEntity.internalServerError().build());
   }
 
-  @GetMapping("/customer/{customerId}")
+  @GetMapping("/customers/{customerId}")
   public ResponseEntity<?> getCustomerAccount(@PathVariable Integer customerId) {
     return customerRepository.findById(customerId)
         .map(ResponseEntity::ok)
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
-  @PostMapping("/customer/{customerId}/checkout")
+  @PostMapping("/customers/{customerId}/checkout")
   public ResponseEntity<?> createCheckoutSession(@PathVariable("customerId") Integer customerId) {
     // TODO:
     return ResponseEntity.noContent().build();
   }
 
-  @PostMapping("/customer/{customerId}/portal")
+  @PostMapping("/customers/{customerId}/portal")
   public ResponseEntity<?> createPortalSession(@PathVariable("customerId") Integer customerId) {
     return customerRepository.findById(customerId)
         .flatMap(customer -> stripeApi.createBillingPortalSession(customer.getStripeCustomerId(),
@@ -65,8 +63,8 @@ public class CustomerController {
 
   private Optional<Customer> createCustomer(CreateCustomerRequest request) {
     var customer = new Customer();
-    customer.setName(request.name);
-    customer.setEmail(request.email);
+    customer.setName(request.name());
+    customer.setEmail(request.email());
 
     return stripeApi.createCustomer(customerRepository.save(customer))
         .map(stripeCustomerId -> {

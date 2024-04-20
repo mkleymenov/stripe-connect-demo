@@ -5,12 +5,24 @@ import {
 } from '@stripe/react-connect-js';
 import { FC, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { LoaderFunction, useLoaderData } from 'react-router-dom';
-import { createSession, getMerchant } from '../api-routes';
+import {
+  ActionFunction,
+  LoaderFunction,
+  useLoaderData,
+} from 'react-router-dom';
+import {
+  createProduct,
+  createSession,
+  getMerchant,
+  getProducts,
+} from '../api-routes';
 import GoToStripeButton from '../components/GoToStripeButton';
 import MerchantStatusCard, {
   Props as MerchantStatusCardProps,
 } from '../components/MerchantStatusCard';
+import MerchantProductCard, {
+  parseFormData,
+} from '../components/MerchantProductCard';
 
 type MerchantStatus = 'REJECTED' | 'PENDING' | 'IN_REVIEW' | 'ACTIVE';
 
@@ -18,6 +30,11 @@ type Merchant = {
   id: number;
   businessName: string;
   status: MerchantStatus;
+};
+
+type MerchantLoaderData = {
+  merchant: Merchant;
+  product?: Product;
 };
 
 const MERCHANT_STATUS_CARDS: Record<MerchantStatus, MerchantStatusCardProps> = {
@@ -46,17 +63,33 @@ const MERCHANT_STATUS_CARDS: Record<MerchantStatus, MerchantStatusCardProps> = {
   },
 };
 
-export const merchantLoader: LoaderFunction = async ({ params }) => {
+export const merchantLoader: LoaderFunction = async ({
+  params,
+}): Promise<MerchantLoaderData> => {
   if (params.id) {
-    const response = await fetch(getMerchant(params.id), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (response.ok) {
-      const merchant = (await response.json()) as Merchant;
+    const [merchantResponse, productsResponse] = await Promise.all([
+      fetch(getMerchant(params.id), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      fetch(getProducts(params.id), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ]);
+
+    if (merchantResponse.ok && productsResponse.ok) {
+      const [merchant, products] = await Promise.all([
+        merchantResponse.json() as Promise<Merchant>,
+        productsResponse.json() as Promise<Product[]>,
+      ]);
+      const [product] = products;
+
       return {
-        id: merchant.id,
-        businessName: merchant.businessName,
-        status: merchant.status,
+        merchant: {
+          id: merchant.id,
+          businessName: merchant.businessName,
+          status: merchant.status,
+        },
+        product,
       };
     }
   }
@@ -64,8 +97,32 @@ export const merchantLoader: LoaderFunction = async ({ params }) => {
   throw new Response('Merchant not found', { status: 404 });
 };
 
+export const merchantAction: ActionFunction = async ({ params, request }) => {
+  const merchantId = params.id || '';
+  const formData = await request.formData();
+  const payload = parseFormData(formData);
+
+  const response = await fetch(createProduct(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      merchantId,
+      ...payload,
+    }),
+  });
+
+  if (response.ok) {
+    return response.json();
+  }
+
+  throw new Response('Sorry, something went wrong', { status: 500 });
+};
+
 const MerchantRoute: FC = () => {
-  const { id, businessName, status } = useLoaderData() as Merchant;
+  const { merchant, product } = useLoaderData() as MerchantLoaderData;
+  const { id, businessName, status } = merchant;
   const { title, subtitle, style } = MERCHANT_STATUS_CARDS[status];
 
   const [stripeConnect] = useState(() => {
@@ -108,6 +165,8 @@ const MerchantRoute: FC = () => {
             <GoToStripeButton userId={id} type="dashboard" />
           )}
         </MerchantStatusCard>
+
+        {status === 'ACTIVE' && <MerchantProductCard product={product} />}
 
         {['PENDING', 'ACTIVE'].includes(status) && (
           <div>
