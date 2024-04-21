@@ -26,6 +26,17 @@ const GoToStripeButton = ({ userId, type }: Props) => {
     }
   }, [userId, type]);
 
+  const redirect = useCallback(
+    (redirectUrl: string) => {
+      if (type === 'dashboard') {
+        window.open(redirectUrl, '__blank');
+      } else {
+        window.location.href = redirectUrl;
+      }
+    },
+    [type],
+  );
+
   const onClick = useCallback(async () => {
     if (!submitted) {
       setSubmitted(true);
@@ -38,7 +49,7 @@ const GoToStripeButton = ({ userId, type }: Props) => {
           },
         });
         if (response.ok) {
-          window.location.href = await response.text();
+          redirect(await response.text());
         }
       } finally {
         setSubmitted(false);

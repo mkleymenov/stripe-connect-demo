@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:~/edu/stripe-connect-demo/data
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.H2Dialect

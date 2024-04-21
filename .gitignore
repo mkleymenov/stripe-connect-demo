@@ -24,3 +24,6 @@ gradle-app.setting
 build
 
 .idea
+
+# H2 local database
+*.db

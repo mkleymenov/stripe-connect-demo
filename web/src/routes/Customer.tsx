@@ -1,7 +1,7 @@
 import { FC, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { LoaderFunction, useLoaderData } from 'react-router-dom';
-import { getCustomer, getProducts } from '../api-routes';
+import { createCheckoutSession, getCustomer, getProducts } from '../api-routes';
 import GoToStripeButton from '../components/GoToStripeButton';
 import ProductCard from '../components/ProductCard';
 
@@ -50,8 +50,23 @@ const CustomerRoute: FC = () => {
   const { customer, products } = useLoaderData() as CustomerLoaderData;
 
   const onProductClick = useCallback(
-    (stripeId: string) => {
-      console.log(`Customer ${customer.id} selected product ${stripeId}`);
+    async (stripePriceId: string) => {
+      const response = await fetch(
+        createCheckoutSession(customer.id.toString()),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ stripePriceId }),
+        },
+      );
+      if (response.ok) {
+        const redirectUrl = response.headers.get('Location');
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        }
+      }
     },
     [customer.id],
   );

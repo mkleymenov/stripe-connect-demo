@@ -1,6 +1,7 @@
 package com.dataart.itkonekt.controller;
 
 import com.dataart.itkonekt.entity.Customer;
+import com.dataart.itkonekt.model.CreateCheckoutSessionRequest;
 import com.dataart.itkonekt.model.CreateCustomerRequest;
 import com.dataart.itkonekt.repository.CustomerRepository;
 import com.dataart.itkonekt.stripe.StripeApi;
@@ -20,6 +21,7 @@ import java.util.Optional;
 @RequestMapping(consumes = "application/json", produces = "application/json")
 public class CustomerController {
   private static final String CUSTOMER_HOME_PAGE = "http://localhost:3000/customer/";
+  private static final double APPLICATION_FEE = 10.0;
 
   private final CustomerRepository customerRepository;
   private final StripeApi stripeApi;
@@ -47,9 +49,14 @@ public class CustomerController {
   }
 
   @PostMapping("/customers/{customerId}/checkout")
-  public ResponseEntity<?> createCheckoutSession(@PathVariable("customerId") Integer customerId) {
-    // TODO:
-    return ResponseEntity.noContent().build();
+  public ResponseEntity<?> createCheckoutSession(@PathVariable("customerId") Integer customerId,
+                                                 @RequestBody CreateCheckoutSessionRequest request) {
+    return customerRepository.findById(customerId)
+        .flatMap(customer -> stripeApi.getPrice(request.stripePriceId())
+            .flatMap(price -> stripeApi.createCheckoutSession(customer, price, getCustomerHomeUrl(customer.getId()),
+                APPLICATION_FEE)))
+        .map(url -> ResponseEntity.created(URI.create(url)).build())
+        .orElseGet(() -> ResponseEntity.internalServerError().build());
   }
 
   @PostMapping("/customers/{customerId}/portal")

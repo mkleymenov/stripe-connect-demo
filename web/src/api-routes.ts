@@ -19,6 +19,9 @@ export const createCustomer = (): string => `${API_BASE_URL}/customers`;
 export const getCustomer = (customerId: string): string =>
   `${API_BASE_URL}/customers/${customerId}`;
 
+export const createCheckoutSession = (customerId: string): string =>
+  `${API_BASE_URL}/customers/${customerId}/checkout`;
+
 export const createBillingPortalLink = (customerId: string): string =>
   `${API_BASE_URL}/customers/${customerId}/portal`;
 

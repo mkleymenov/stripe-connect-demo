@@ -52,22 +52,17 @@ const MerchantProductCardComponent = ({ product }: Props) => {
           type="number"
           name="price"
           min="1"
+          step="0.01"
           defaultValue={formatPrice(price)}
         />
       </label>
 
       <label>
         Currency
-        <select name="currency">
-          <option value="EUR" selected={currency === 'EUR'}>
-            EUR
-          </option>
-          <option value="GBP" selected={currency === 'GBP'}>
-            GBP
-          </option>
-          <option value="USD" selected={currency === 'USD'}>
-            USD
-          </option>
+        <select name="currency" defaultValue={currency}>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="USD">USD</option>
         </select>
       </label>
 
@@ -92,19 +87,14 @@ const MerchantProductCardComponent = ({ product }: Props) => {
               defaultValue={recurrence?.intervalCount || 1}
             />
 
-            <select name="interval">
-              <option value="DAY" selected={recurrence?.interval === 'DAY'}>
-                day(s)
-              </option>
-              <option value="WEEK" selected={recurrence?.interval === 'WEEK'}>
-                week(s)
-              </option>
-              <option value="MONTH" selected={recurrence?.interval === 'MONTH'}>
-                month(s)
-              </option>
-              <option value="YEAR" selected={recurrence?.interval === 'YEAR'}>
-                year(s)
-              </option>
+            <select
+              name="interval"
+              defaultValue={recurrence?.interval || 'MONTH'}
+            >
+              <option value="DAY">day(s)</option>
+              <option value="WEEK">week(s)</option>
+              <option value="MONTH">month(s)</option>
+              <option value="YEAR">year(s)</option>
             </select>
           </fieldset>
         </label>

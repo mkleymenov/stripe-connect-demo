@@ -14,22 +14,28 @@ import com.stripe.model.LoginLink;
 import com.stripe.model.Price;
 import com.stripe.model.Product;
 import com.stripe.model.StripeObject;
-import com.stripe.model.billingportal.Session;
+import com.stripe.model.checkout.Session;
 import com.stripe.param.AccountCreateParams;
 import com.stripe.param.AccountLinkCreateParams;
 import com.stripe.param.AccountSessionCreateParams;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.PriceCreateParams;
 import com.stripe.param.PriceListParams;
+import com.stripe.param.PriceRetrieveParams;
 import com.stripe.param.PriceUpdateParams;
 import com.stripe.param.ProductCreateParams;
-import com.stripe.param.billingportal.SessionCreateParams;
+import com.stripe.param.checkout.SessionCreateParams;
+import com.stripe.param.checkout.SessionCreateParams.LineItem;
+import com.stripe.param.checkout.SessionCreateParams.Mode;
+import com.stripe.param.checkout.SessionCreateParams.PaymentIntentData;
+import com.stripe.param.checkout.SessionCreateParams.SubscriptionData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -101,9 +107,6 @@ public class StripeApi {
           .setAccount(stripeAccountId)
           .setComponents(AccountSessionCreateParams.Components.builder()
               .setPayments(AccountSessionCreateParams.Components.Payments.builder().setEnabled(true).build())
-              .setNotificationBanner(AccountSessionCreateParams.Components.NotificationBanner.builder()
-                  .setEnabled(true)
-                  .build())
               .build())
           .build();
 
@@ -129,16 +132,78 @@ public class StripeApi {
     }
   }
 
+  public Optional<String> createCheckoutSession(Customer customer, Price stripePrice, String returnUrl,
+                                                double applicationFee) {
+    try {
+      var connectedAccountId = stripePrice.getProductObject().getMetadata().get("connected_account_id");
+
+      var params = SessionCreateParams.builder()
+          .setCustomer(customer.getStripeCustomerId())
+          .setCancelUrl(returnUrl)
+          .setSuccessUrl(returnUrl)
+          .setMode(stripePrice.getRecurring() != null ?
+              Mode.SUBSCRIPTION :
+              Mode.PAYMENT)
+          .addLineItem(LineItem.builder()
+              .setPrice(stripePrice.getId())
+              .setQuantity(1L)
+              .setAdjustableQuantity(LineItem.AdjustableQuantity.builder()
+                  .setEnabled(true)
+                  .build())
+              .build())
+          .setCustomerUpdate(SessionCreateParams.CustomerUpdate.builder()
+              .setAddress(SessionCreateParams.CustomerUpdate.Address.AUTO)
+              .build());
+
+      Optional.ofNullable(stripePrice.getRecurring())
+          .ifPresentOrElse(
+              __ -> params.setMode(Mode.SUBSCRIPTION)
+                  .setSubscriptionData(SubscriptionData.builder()
+                      .setApplicationFeePercent(BigDecimal.valueOf(applicationFee))
+                      .setTransferData(SubscriptionData.TransferData.builder()
+                          .setDestination(connectedAccountId)
+                          .build())
+                      .setOnBehalfOf(connectedAccountId)
+                      .build()),
+              () -> params.setMode(Mode.PAYMENT)
+                  .setInvoiceCreation(SessionCreateParams.InvoiceCreation.builder().setEnabled(true).build())
+                  .setPaymentIntentData(PaymentIntentData.builder()
+                      .setTransferData(PaymentIntentData.TransferData.builder()
+                          .setDestination(connectedAccountId)
+                          .build())
+                      .setOnBehalfOf(connectedAccountId)
+                      .build()));
+
+      return Optional.of(stripeClient.checkout().sessions().create(params.build()))
+          .map(Session::getUrl);
+    } catch (StripeException ex) {
+      LOG.error("Couldn't create Checkout session for customer {}", customer.getId(), ex);
+      return Optional.empty();
+    }
+  }
+
   public Optional<String> createBillingPortalSession(String stripeCustomerId, String returnUrl) {
     try {
-      var params = SessionCreateParams.builder()
+      var params = com.stripe.param.billingportal.SessionCreateParams.builder()
           .setCustomer(stripeCustomerId)
           .setReturnUrl(returnUrl)
           .build();
 
-      return Optional.of(stripeClient.billingPortal().sessions().create(params)).map(Session::getUrl);
+      return Optional.of(stripeClient.billingPortal().sessions().create(params))
+          .map(com.stripe.model.billingportal.Session::getUrl);
     } catch (StripeException ex) {
       LOG.error("Couldn't create billing portal session for Stripe customer {}", stripeCustomerId, ex);
+      return Optional.empty();
+    }
+  }
+
+  public Optional<Price> getPrice(String stripePriceId) {
+    try {
+      var params = PriceRetrieveParams.builder().addExpand("product").build();
+
+      return Optional.of(stripeClient.prices().retrieve(stripePriceId, params));
+    } catch (StripeException ex) {
+      LOG.error("Couldn't retrieve Stripe price {}", stripePriceId, ex);
       return Optional.empty();
     }
   }
@@ -171,6 +236,7 @@ public class StripeApi {
       var params = ProductCreateParams.builder()
           .setName(merchant.getBusinessName())
           .putMetadata("merchant_id", merchant.getId().toString())
+          .putMetadata("connected_account_id", merchant.getStripeAccountId())
           .build();
 
       return Optional.of(stripeClient.products().create(params)).map(Product::getId);
