@@ -149,28 +149,33 @@ const MerchantRoute: FC = () => {
         <title>{businessName}</title>
       </Helmet>
 
-      <h1 className="text-3xl text-grey-primary mb-4">{businessName}</h1>
+      <h1 className="text-3xl text-grey-primary mb-8">{businessName}</h1>
+
+      <MerchantStatusCard
+        title={title}
+        subtitle={subtitle}
+        style={style}
+        className="mb-8"
+      >
+        {status === 'PENDING' && (
+          <GoToStripeButton userId={id} type="onboarding" />
+        )}
+        {status === 'ACTIVE' && (
+          <GoToStripeButton userId={id} type="dashboard" />
+        )}
+      </MerchantStatusCard>
+
+      {status === 'ACTIVE' && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-medium mb-2">Configure Your Product</h2>
+          <MerchantProductCard product={product} />
+        </div>
+      )}
 
       <ConnectComponentsProvider connectInstance={stripeConnect}>
-        <MerchantStatusCard
-          title={title}
-          subtitle={subtitle}
-          style={style}
-          className="my-2"
-        >
-          {status === 'PENDING' && (
-            <GoToStripeButton userId={id} type="onboarding" />
-          )}
-          {status === 'ACTIVE' && (
-            <GoToStripeButton userId={id} type="dashboard" />
-          )}
-        </MerchantStatusCard>
-
-        {status === 'ACTIVE' && <MerchantProductCard product={product} />}
-
         {['PENDING', 'ACTIVE'].includes(status) && (
-          <div>
-            <h2 className="text-2xl font-medium">Payments</h2>
+          <div className="mb-8">
+            <h2 className="text-2xl font-medium mb-2">Payments</h2>
             <ConnectPayments />
           </div>
         )}

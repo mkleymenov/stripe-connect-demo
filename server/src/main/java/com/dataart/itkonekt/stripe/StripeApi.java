@@ -141,9 +141,6 @@ public class StripeApi {
           .setCustomer(customer.getStripeCustomerId())
           .setCancelUrl(returnUrl)
           .setSuccessUrl(returnUrl)
-          .setMode(stripePrice.getRecurring() != null ?
-              Mode.SUBSCRIPTION :
-              Mode.PAYMENT)
           .addLineItem(LineItem.builder()
               .setPrice(stripePrice.getId())
               .setQuantity(1L)

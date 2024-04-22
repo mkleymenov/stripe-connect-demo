@@ -7,7 +7,7 @@ module.exports = {
         'green-dark': '#2F7532',
         'green-light': '#DEF5E1',
         'green-primary': '#4CAF50',
-        accent: '#FFD35A',
+        accent: '#ffd954',
         'grey-primary': '#212121',
         'grey-secondary': '#757575',
       },
