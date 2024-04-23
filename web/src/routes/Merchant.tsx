@@ -24,14 +24,6 @@ import MerchantProductCard, {
   parseFormData,
 } from '../components/MerchantProductCard';
 
-type MerchantStatus = 'REJECTED' | 'PENDING' | 'IN_REVIEW' | 'ACTIVE';
-
-type Merchant = {
-  id: number;
-  businessName: string;
-  status: MerchantStatus;
-};
-
 type MerchantLoaderData = {
   merchant: Merchant;
   product?: Product;

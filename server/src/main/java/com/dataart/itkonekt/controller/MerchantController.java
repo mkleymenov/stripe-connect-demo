@@ -30,6 +30,11 @@ public class MerchantController {
     this.stripeApi = stripeApi;
   }
 
+  @GetMapping("/merchants")
+  public Iterable<Merchant> listMerchants() {
+    return merchantRepository.findAll();
+  }
+
   @PostMapping(value = "/merchants")
   public ResponseEntity<?> createMerchantAccount(@RequestBody CreateMerchantAccountRequest request) {
     return merchantRepository.findByEmail(request.email())

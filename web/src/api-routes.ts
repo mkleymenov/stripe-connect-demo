@@ -1,5 +1,7 @@
 const API_BASE_URL = 'http://localhost:8080';
 
+export const listMerchants = (): string => `${API_BASE_URL}/merchants`;
+
 export const createMerchant = (): string => `${API_BASE_URL}/merchants`;
 
 export const getMerchant = (merchantId: string): string =>
@@ -13,6 +15,8 @@ export const createDashboardLink = (merchantId: string): string =>
 
 export const createSession = (merchantId: string): string =>
   `${API_BASE_URL}/merchants/${merchantId}/session`;
+
+export const listCustomers = (): string => `${API_BASE_URL}/customers`;
 
 export const createCustomer = (): string => `${API_BASE_URL}/customers`;
 

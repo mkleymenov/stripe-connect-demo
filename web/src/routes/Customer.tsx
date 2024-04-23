@@ -5,11 +5,6 @@ import { createCheckoutSession, getCustomer, getProducts } from '../api-routes';
 import GoToStripeButton from '../components/GoToStripeButton';
 import ProductCard from '../components/CustomerProductCard';
 
-type Customer = {
-  id: number;
-  name: string;
-};
-
 type CustomerLoaderData = {
   customer: Customer;
   products: Product[];

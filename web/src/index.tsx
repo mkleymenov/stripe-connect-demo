@@ -5,7 +5,7 @@ import './index.css';
 import Customer, { customerLoader } from './routes/Customer';
 import Merchant, { merchantAction, merchantLoader } from './routes/Merchant';
 import LayoutRoute from './routes/Layout';
-import Home, { loginAction } from './routes/Home';
+import Home, { homeLoader, signUpAction } from './routes/Home';
 import Error from './routes/Error';
 
 const router = createBrowserRouter([
@@ -13,7 +13,12 @@ const router = createBrowserRouter([
     element: <LayoutRoute />,
     errorElement: <Error />,
     children: [
-      { path: '/', element: <Home />, action: loginAction },
+      {
+        path: '/',
+        element: <Home />,
+        loader: homeLoader,
+        action: signUpAction,
+      },
       {
         path: '/merchant/:id',
         element: <Merchant />,

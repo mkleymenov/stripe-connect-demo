@@ -6,7 +6,7 @@ type Props = {
 };
 
 const SignUpCardComponent = ({ title, type }: Props) => (
-  <div className="w-96 p-8 bg-green-light rounded-lg flex flex-col gap-4">
+  <div className="w-96 p-8 pt-6 bg-green-light rounded-lg flex flex-col gap-4">
     <h2 className="text-xl text-grey-primary text-center font-medium">
       {title}
     </h2>

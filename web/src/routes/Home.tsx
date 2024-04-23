@@ -1,10 +1,52 @@
 import React, { FC } from 'react';
 import SignUpCard from '../components/SignUpCard';
 import { Helmet } from 'react-helmet';
-import { ActionFunction, redirect } from 'react-router-dom';
-import { createCustomer, createMerchant } from '../api-routes';
+import {
+  ActionFunction,
+  LoaderFunction,
+  redirect,
+  useLoaderData,
+} from 'react-router-dom';
+import {
+  createCustomer,
+  createMerchant,
+  listCustomers,
+  listMerchants,
+} from '../api-routes';
+import LoginCard from '../components/LoginCard';
 
-export const loginAction: ActionFunction = async ({ request }) => {
+type HomeLoaderData = {
+  customers: Customer[];
+  merchants: Merchant[];
+};
+
+export const homeLoader: LoaderFunction = async (): Promise<HomeLoaderData> => {
+  const [customersResponse, merchantsResponse] = await Promise.all([
+    fetch(listCustomers(), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }),
+    fetch(listMerchants(), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }),
+  ]);
+
+  if (customersResponse.ok && merchantsResponse.ok) {
+    const [customers, merchants] = await Promise.all([
+      customersResponse.json(),
+      merchantsResponse.json(),
+    ]);
+
+    return { customers, merchants };
+  }
+
+  throw new Response('An unexpected error has occurred', { status: 500 });
+};
+
+export const signUpAction: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const { type, name, email, businessName } = Object.fromEntries(formData);
 
@@ -31,6 +73,8 @@ export const loginAction: ActionFunction = async ({ request }) => {
 };
 
 const HomeRoute: FC = () => {
+  const { customers, merchants } = useLoaderData() as HomeLoaderData;
+
   return (
     <>
       <Helmet>
@@ -39,14 +83,47 @@ const HomeRoute: FC = () => {
 
       <h1 className="mb-8 text-3xl text-center">Stripe Connect Demo</h1>
 
-      <ul className="flex flex-row gap-8 lg:gap-32 justify-center">
-        <li>
+      <div className="flex flex-row gap-8 lg:gap-32 justify-center">
+        <div>
           <SignUpCard type="customer" title="Create Customer" />
-        </li>
-        <li>
+
+          {customers?.length && (
+            <h2 className="text-xl font-medium text-center my-8">
+              Log in with
+            </h2>
+          )}
+
+          {customers?.length && (
+            <ul className="my-8">
+              {customers.map(({ id, name }) => (
+                <li key={id} className="mb-8 last:mb-0">
+                  <LoginCard type="customer" id={id} title={name} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div>
           <SignUpCard type="merchant" title="Create Merchant" />
-        </li>
-      </ul>
+
+          {merchants?.length && (
+            <h2 className="text-xl font-medium text-center my-8">
+              Log in with
+            </h2>
+          )}
+
+          {merchants?.length && (
+            <ul className="my-8">
+              {merchants.map(({ id, businessName }) => (
+                <li key={id} className="mb-8 last:mb-0">
+                  <LoginCard type="merchant" id={id} title={businessName} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </>
   );
 };

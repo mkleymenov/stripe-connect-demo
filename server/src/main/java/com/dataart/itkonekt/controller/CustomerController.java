@@ -32,6 +32,11 @@ public class CustomerController {
     this.stripeApi = stripeApi;
   }
 
+  @GetMapping("/customers")
+  public Iterable<Customer> listCustomers() {
+    return customerRepository.findAll();
+  }
+
   @PostMapping("/customers")
   public ResponseEntity<?> createCustomerAccount(@RequestBody CreateCustomerRequest request) {
     return customerRepository.findByEmail(request.email())
