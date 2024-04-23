@@ -7,7 +7,7 @@ const LayoutRoute = () => {
     <main className="flex flex-col">
       <Header />
 
-      <section className="w-full lg:w-2/3 mx-auto mt-16">
+      <section className="w-full lg:w-2/3 mx-auto mt-8">
         <Outlet />
       </section>
     </main>

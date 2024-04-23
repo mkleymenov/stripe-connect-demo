@@ -5,7 +5,7 @@ type Props = {
   type: 'customer' | 'merchant';
 };
 
-const LoginCardComponent = ({ title, type }: Props) => (
+const SignUpCardComponent = ({ title, type }: Props) => (
   <div className="w-96 p-8 bg-green-light rounded-lg flex flex-col gap-4">
     <h2 className="text-xl text-grey-primary text-center font-medium">
       {title}
@@ -45,10 +45,10 @@ const LoginCardComponent = ({ title, type }: Props) => (
       <input
         className="p-2 cursor-pointer font-medium uppercase border border-green-dark rounded text-accent bg-green-dark hover:bg-opacity-90 hover:border-opacity-90"
         type="submit"
-        value="Log In"
+        value="Sign Up"
       />
     </Form>
   </div>
 );
 
-export default LoginCardComponent;
+export default SignUpCardComponent;

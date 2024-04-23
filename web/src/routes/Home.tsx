@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import LoginCard from '../components/LoginCard';
+import SignUpCard from '../components/SignUpCard';
 import { Helmet } from 'react-helmet';
 import { ActionFunction, redirect } from 'react-router-dom';
 import { createCustomer, createMerchant } from '../api-routes';
@@ -34,19 +34,17 @@ const HomeRoute: FC = () => {
   return (
     <>
       <Helmet>
-        <title>Home</title>
+        <title>Stripe Connect Demo</title>
       </Helmet>
 
-      <h1 className="mb-8 text-3xl text-center">
-        [Some catchy phrase goes here]
-      </h1>
+      <h1 className="mb-8 text-3xl text-center">Stripe Connect Demo</h1>
 
       <ul className="flex flex-row gap-8 lg:gap-32 justify-center">
         <li>
-          <LoginCard type="customer" title="I am a customer" />
+          <SignUpCard type="customer" title="Create Customer" />
         </li>
         <li>
-          <LoginCard type="merchant" title="I am a merchant" />
+          <SignUpCard type="merchant" title="Create Merchant" />
         </li>
       </ul>
     </>
