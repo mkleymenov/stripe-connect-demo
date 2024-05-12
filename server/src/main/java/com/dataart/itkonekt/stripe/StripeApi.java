@@ -54,6 +54,12 @@ public class StripeApi {
     this.webhookSecret = webhookSecret;
   }
 
+  /**
+   * Creates an Express Connect account for the merchant, prefilling some account details.
+   *
+   * @param merchant merchant
+   * @return Stripe account ID
+   */
   public Optional<String> createConnectAccount(Merchant merchant) {
     try {
       var params = new AccountCreateParams.Builder()
@@ -70,12 +76,19 @@ public class StripeApi {
           .build();
 
       return Optional.of(stripeClient.accounts().create(params)).map(Account::getId);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create Stripe account for merchant {}", merchant.getId(), ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Generates an onboarding link for a Stripe account.
+   *
+   * @param stripeAccountId Stripe account ID
+   * @param returnUrl       URL to return to after the onboarding
+   * @return account onboarding link URL
+   */
   public Optional<String> createConnectOnboardingLink(String stripeAccountId, String returnUrl) {
     try {
       var params = AccountLinkCreateParams.builder()
@@ -86,21 +99,33 @@ public class StripeApi {
           .build();
 
       return Optional.of(stripeClient.accountLinks().create(params)).map(AccountLink::getUrl);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create onboarding link for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Generates a Stripe Express Dashboard login link for a Connect account.
+   *
+   * @param stripeAccountId Stripe account ID
+   * @return Express Dashboard login link URL
+   */
   public Optional<String> createConnectDashboardLink(String stripeAccountId) {
     try {
       return Optional.of(stripeClient.accounts().loginLinks().create(stripeAccountId)).map(LoginLink::getUrl);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create login link for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Creates a Connect Account session and returns the session client secret.
+   *
+   * @param stripeAccountId Stripe account ID
+   * @return session client secret
+   */
   public Optional<String> createConnectAccountSession(String stripeAccountId) {
     try {
       var params = AccountSessionCreateParams.builder()
@@ -111,12 +136,18 @@ public class StripeApi {
           .build();
 
       return Optional.of(stripeClient.accountSessions().create(params)).map(AccountSession::getClientSecret);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create session for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Creates a new Customer in Stripe.
+   *
+   * @param customer Customer domain object
+   * @return Stripe Customer ID
+   */
   public Optional<String> createCustomer(Customer customer) {
     try {
       var params = CustomerCreateParams.builder()
@@ -126,12 +157,23 @@ public class StripeApi {
           .build();
 
       return Optional.of(stripeClient.customers().create(params)).map(com.stripe.model.Customer::getId);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create Stripe customer for app customer {}", customer.getId(), ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Creates a Checkout session for a customer and a specific Stripe product.
+   * <p>
+   * The product can represent a one-time payment as well as a recurring subscription.
+   *
+   * @param customer       Customer domain object
+   * @param stripePrice    Stripe Price object corresponding to a product being purchased
+   * @param returnUrl      URL to return the customer to after successful or cancelled checkout
+   * @param applicationFee application fee as percent of a total price
+   * @return Checkout session URL
+   */
   public Optional<String> createCheckoutSession(Customer customer, Price stripePrice, String returnUrl,
                                                 double applicationFee) {
     try {
@@ -165,6 +207,7 @@ public class StripeApi {
               () -> params.setMode(Mode.PAYMENT)
                   .setInvoiceCreation(SessionCreateParams.InvoiceCreation.builder().setEnabled(true).build())
                   .setPaymentIntentData(PaymentIntentData.builder()
+                      .setApplicationFeeAmount(Math.round(stripePrice.getUnitAmount() * applicationFee / 100.0))
                       .setTransferData(PaymentIntentData.TransferData.builder()
                           .setDestination(connectedAccountId)
                           .build())
@@ -173,12 +216,19 @@ public class StripeApi {
 
       return Optional.of(stripeClient.checkout().sessions().create(params.build()))
           .map(Session::getUrl);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create Checkout session for customer {}", customer.getId(), ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Generates a Billing Portal session for a customer.
+   *
+   * @param stripeCustomerId Stripe Customer ID
+   * @param returnUrl        URL to return the customer to from the Billing Portal page
+   * @return Billing Portal session URL
+   */
   public Optional<String> createBillingPortalSession(String stripeCustomerId, String returnUrl) {
     try {
       var params = com.stripe.param.billingportal.SessionCreateParams.builder()
@@ -188,46 +238,70 @@ public class StripeApi {
 
       return Optional.of(stripeClient.billingPortal().sessions().create(params))
           .map(com.stripe.model.billingportal.Session::getUrl);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create billing portal session for Stripe customer {}", stripeCustomerId, ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Retrieves a Price by ID.
+   *
+   * @param stripePriceId Stripe Price ID
+   * @return Stripe Price object
+   */
   public Optional<Price> getPrice(String stripePriceId) {
     try {
       var params = PriceRetrieveParams.builder().addExpand("product").build();
 
       return Optional.of(stripeClient.prices().retrieve(stripePriceId, params));
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't retrieve Stripe price {}", stripePriceId, ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Retrieves all active Stripe Prices, optionally filtered by a merchant.
+   *
+   * @param merchantId restricts returned Prices to those belonging to the specified merchant
+   * @return stream of active Stripe Prices (with expanded Product objects)
+   */
   public Stream<Price> listActivePrices(Optional<Integer> merchantId) {
     try {
       var params = PriceListParams.builder().setActive(true).addExpand("data.product");
       merchantId.map(Object::toString).ifPresent(params::addLookupKey);
 
       return StreamSupport.stream(stripeClient.prices().list(params.build()).autoPagingIterable().spliterator(), false);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't fetch prices from Stripe", ex);
       return Stream.empty();
     }
   }
 
+  /**
+   * Finds an active price belonging to the specified merchant.
+   *
+   * @param merchantId merchant account ID
+   * @return Stripe Price object
+   */
   public Optional<Price> findMerchantPrice(Integer merchantId) {
     try {
       var params = PriceListParams.builder().setActive(true).addLookupKey(merchantId.toString()).build();
 
       return stripeClient.prices().list(params).getData().stream().findFirst();
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't list prices for merchant {}", merchantId, ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Creates a new Stripe Product for a merchant.
+   *
+   * @param merchant merchant account
+   * @return Stripe Product ID
+   */
   public Optional<String> createMerchantProduct(Merchant merchant) {
     try {
       var params = ProductCreateParams.builder()
@@ -237,12 +311,19 @@ public class StripeApi {
           .build();
 
       return Optional.of(stripeClient.products().create(params)).map(Product::getId);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create product for merchant {}", merchant.getId(), ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Creates a new Stripe Price under the specified Stripe Product.
+   *
+   * @param stripeProductId Stripe Product ID
+   * @param request         Price attributes
+   * @return Stripe Price object (with expanded Product object)
+   */
   public Optional<Price> createPrice(String stripeProductId, CreateProductRequest request) {
     try {
       var params = PriceCreateParams.builder()
@@ -267,26 +348,38 @@ public class StripeApi {
           .ifPresent(params::setRecurring);
 
       return Optional.of(stripeClient.prices().create(params.build()));
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't create price for product {} and merchant {}", stripeProductId, request.merchantId(), ex);
       return Optional.empty();
     }
   }
 
+  /**
+   * Disables Stripe Price.
+   *
+   * @param stripePriceId Stripe Price ID
+   */
   public void disablePrice(String stripePriceId) {
     try {
       var params = PriceUpdateParams.builder().setActive(false).build();
 
       stripeClient.prices().update(stripePriceId, params);
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't update price {}", stripePriceId, ex);
     }
   }
 
+  /**
+   * Constructs a Stripe Event object from a webhook request payload, verifying the request signature.
+   *
+   * @param payload   webhook request payload (event JSON)
+   * @param signature webhook request signature (header)
+   * @return Stripe Event object
+   */
   public Optional<Event> verifyEvent(String payload, String signature) {
     try {
       return Optional.ofNullable(stripeClient.constructEvent(payload, signature, webhookSecret));
-    } catch (StripeException ex) {
+    } catch (Exception ex) {
       LOG.error("Couldn't verify Stripe event '{}'. Signature: '{}'", payload, signature, ex);
       return Optional.empty();
     }

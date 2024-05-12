@@ -39,8 +39,7 @@ public class CustomerController {
 
   @PostMapping("/customers")
   public ResponseEntity<?> createCustomerAccount(@RequestBody CreateCustomerRequest request) {
-    return customerRepository.findByEmail(request.email())
-        .or(() -> createCustomer(request))
+    return createCustomer(request)
         .map(Customer::getId)
         .map(id -> ResponseEntity.created(URI.create(getCustomerHomeUrl(id))).build())
         .orElseGet(() -> ResponseEntity.internalServerError().build());

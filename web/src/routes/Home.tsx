@@ -87,13 +87,13 @@ const HomeRoute: FC = () => {
         <div>
           <SignUpCard type="customer" title="Create Customer" />
 
-          {customers?.length && (
+          {!!customers?.length && (
             <h2 className="text-xl font-medium text-center my-8">
               Log in with
             </h2>
           )}
 
-          {customers?.length && (
+          {!!customers?.length && (
             <ul className="my-8">
               {customers.map(({ id, name }) => (
                 <li key={id} className="mb-8 last:mb-0">
@@ -107,13 +107,13 @@ const HomeRoute: FC = () => {
         <div>
           <SignUpCard type="merchant" title="Create Merchant" />
 
-          {merchants?.length && (
+          {!!merchants?.length && (
             <h2 className="text-xl font-medium text-center my-8">
               Log in with
             </h2>
           )}
 
-          {merchants?.length && (
+          {!!merchants?.length && (
             <ul className="my-8">
               {merchants.map(({ id, businessName }) => (
                 <li key={id} className="mb-8 last:mb-0">

@@ -64,7 +64,7 @@ const MerchantProductCardComponent = ({ product }: Props) => {
 
         <select
           name="currency"
-          defaultValue={currency}
+          defaultValue={currency.toUpperCase()}
           className="border rounded border-grey-secondary p-1.5"
         >
           <option value="EUR">EUR</option>

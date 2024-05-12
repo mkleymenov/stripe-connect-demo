@@ -37,8 +37,7 @@ public class MerchantController {
 
   @PostMapping(value = "/merchants")
   public ResponseEntity<?> createMerchantAccount(@RequestBody CreateMerchantAccountRequest request) {
-    return merchantRepository.findByEmail(request.email())
-        .or(() -> createMerchant(request))
+    return createMerchant(request)
         .map(Merchant::getId)
         .map(merchantId -> ResponseEntity.created(URI.create(getMerchantHomeUrl(merchantId))).build())
         .orElseGet(() -> ResponseEntity.internalServerError().build());
