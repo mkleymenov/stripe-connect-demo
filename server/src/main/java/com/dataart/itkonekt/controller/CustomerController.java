@@ -21,7 +21,6 @@ import java.util.Optional;
 @RequestMapping(consumes = "application/json", produces = "application/json")
 public class CustomerController {
   private static final String CUSTOMER_HOME_PAGE = "http://localhost:3000/customer/";
-  private static final double APPLICATION_FEE = 10.0;
 
   private final CustomerRepository customerRepository;
   private final StripeApi stripeApi;
@@ -55,21 +54,14 @@ public class CustomerController {
   @PostMapping("/customers/{customerId}/checkout")
   public ResponseEntity<?> createCheckoutSession(@PathVariable("customerId") Integer customerId,
                                                  @RequestBody CreateCheckoutSessionRequest request) {
-    return customerRepository.findById(customerId)
-        .flatMap(customer -> stripeApi.getPrice(request.stripePriceId())
-            .flatMap(price -> stripeApi.createCheckoutSession(customer, price, getCustomerHomeUrl(customer.getId()),
-                APPLICATION_FEE)))
-        .map(url -> ResponseEntity.created(URI.create(url)).build())
-        .orElseGet(() -> ResponseEntity.internalServerError().build());
+    // TODO: create a Stripe Checkout session for a customer and a price
+    return ResponseEntity.internalServerError().body("Not implemented");
   }
 
   @PostMapping("/customers/{customerId}/portal")
   public ResponseEntity<?> createPortalSession(@PathVariable("customerId") Integer customerId) {
-    return customerRepository.findById(customerId)
-        .flatMap(customer -> stripeApi.createBillingPortalSession(customer.getStripeCustomerId(),
-            getCustomerHomeUrl(customer.getId())))
-        .map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.notFound().build());
+    // TODO: create a Stripe Billing Portal session for a customer
+    return ResponseEntity.internalServerError().body("Not implemented");
   }
 
   private Optional<Customer> createCustomer(CreateCustomerRequest request) {
@@ -77,11 +69,8 @@ public class CustomerController {
     customer.setName(request.name());
     customer.setEmail(request.email());
 
-    return stripeApi.createCustomer(customerRepository.save(customer))
-        .map(stripeCustomerId -> {
-          customer.setStripeCustomerId(stripeCustomerId);
-          return customerRepository.save(customer);
-        });
+    // TODO: create Stripe Customer
+    return Optional.of(customerRepository.save(customer));
   }
 
   private static String getCustomerHomeUrl(Integer customerId) {

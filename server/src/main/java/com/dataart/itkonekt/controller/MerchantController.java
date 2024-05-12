@@ -52,39 +52,27 @@ public class MerchantController {
 
   @PostMapping("/merchants/{merchantId}/onboarding")
   public ResponseEntity<?> createOnboardingLink(@PathVariable("merchantId") Integer merchantId) {
-    return merchantRepository.findById(merchantId)
-        .flatMap(merchant -> stripeApi.createConnectOnboardingLink(merchant.getStripeAccountId(),
-            getMerchantHomeUrl(merchantId)))
-        .map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.notFound().build());
+    // TODO: create Connect onboarding link for the merchant
+    return ResponseEntity.internalServerError().body("Not implemented");
   }
 
   @PostMapping("/merchants/{merchantId}/dashboard")
   public ResponseEntity<?> createDashboardLink(@PathVariable("merchantId") Integer merchantId) {
-    return merchantRepository.findById(merchantId)
-        .map(Merchant::getStripeAccountId)
-        .flatMap(stripeApi::createConnectDashboardLink)
-        .map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.notFound().build());
+    // TODO: create Express Dashboard link for the merchant
+    return ResponseEntity.internalServerError().body("Not implemented");
   }
 
   @PostMapping("/merchants/{merchantId}/session")
   public ResponseEntity<?> createAccountSession(@PathVariable("merchantId") Integer merchantId) {
-    return merchantRepository.findById(merchantId)
-        .map(Merchant::getStripeAccountId)
-        .flatMap(stripeApi::createConnectAccountSession)
-        .map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.notFound().build());
+    // TODO: create Connect account session for the merchant
+    return ResponseEntity.internalServerError().body("Not implemented");
   }
 
   private Optional<Merchant> createMerchant(CreateMerchantAccountRequest request) {
     var merchant = merchantRepository.save(toMerchant(request));
 
-    return stripeApi.createConnectAccount(merchant)
-        .map(stripeAccountId -> {
-          merchant.setStripeAccountId(stripeAccountId);
-          return merchantRepository.save(merchant);
-        });
+    // TODO: create Connect account for the merchant
+    return Optional.of(merchant);
   }
 
   private static Merchant toMerchant(CreateMerchantAccountRequest request) {

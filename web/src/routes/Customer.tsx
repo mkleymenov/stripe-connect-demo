@@ -2,7 +2,6 @@ import { FC, useCallback, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { LoaderFunction, useLoaderData } from 'react-router-dom';
 import { createCheckoutSession, getCustomer, getProducts } from '../api-routes';
-import GoToStripeButton from '../components/GoToStripeButton';
 import ProductCard from '../components/CustomerProductCard';
 
 type CustomerLoaderData = {
@@ -84,14 +83,15 @@ const CustomerRoute: FC = () => {
         Welcome, {customer.name}!
       </h1>
 
-      <div className="flex flex-row content-between items-center rounded-md p-4 mb-8 bg-green-light">
-        <div className="flex-auto">
-          Go to Stripe to see your payment history and manage subscriptions
-        </div>
-        <div>
-          <GoToStripeButton userId={customer.id} type="billing_portal" />
-        </div>
-      </div>
+      {/* TODO: Stripe Billing Portal button */}
+      {/*<div className="flex flex-row content-between items-center rounded-md p-4 mb-8 bg-green-light">*/}
+      {/*  <div className="flex-grow">*/}
+      {/*    Go to Stripe to see your payment history and manage subscriptions*/}
+      {/*  </div>*/}
+      {/*  <div>*/}
+      {/*    <GoToStripeButton userId={customer.id} type="billing_portal" />*/}
+      {/*  </div>*/}
+      {/*</div>*/}
 
       <div className="mb-8">
         <h2 className="text-2xl font-medium mb-4">Explore products</h2>

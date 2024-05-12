@@ -1,9 +1,4 @@
-import { loadConnectAndInitialize } from '@stripe/connect-js';
-import {
-  ConnectComponentsProvider,
-  ConnectPayments,
-} from '@stripe/react-connect-js';
-import { FC, useState } from 'react';
+import { FC } from 'react';
 import { Helmet } from 'react-helmet';
 import {
   ActionFunction,
@@ -16,10 +11,7 @@ import {
   getMerchant,
   getProducts,
 } from '../api-routes';
-import GoToStripeButton from '../components/GoToStripeButton';
-import MerchantStatusCard, {
-  Props as MerchantStatusCardProps,
-} from '../components/MerchantStatusCard';
+import { Props as MerchantStatusCardProps } from '../components/MerchantStatusCard';
 import MerchantProductCard, {
   parseFormData,
 } from '../components/MerchantProductCard';
@@ -112,28 +104,23 @@ export const merchantAction: ActionFunction = async ({ params, request }) => {
   throw new Response('Sorry, something went wrong', { status: 500 });
 };
 
+const fetchConnectClientSecret = async (merchantId: number) => {
+  const response = await fetch(createSession(merchantId.toString()), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (response.ok) {
+    return await response.text();
+  }
+  return '';
+};
+
 const MerchantRoute: FC = () => {
   const { merchant, product } = useLoaderData() as MerchantLoaderData;
   const { id, businessName, status } = merchant;
   const { title, subtitle, style } = MERCHANT_STATUS_CARDS[status];
 
-  const [stripeConnect] = useState(() => {
-    const fetchSecret = async () => {
-      const response = await fetch(createSession(id.toString()), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (response.ok) {
-        return await response.text();
-      }
-      return '';
-    };
-
-    return loadConnectAndInitialize({
-      publishableKey: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
-      fetchClientSecret: fetchSecret,
-    });
-  });
+  // TODO: initialize Stripe Connect JS instance
 
   return (
     <>
@@ -143,35 +130,30 @@ const MerchantRoute: FC = () => {
 
       <h1 className="text-3xl text-grey-primary mb-8">{businessName}</h1>
 
-      <MerchantStatusCard
-        title={title}
-        subtitle={subtitle}
-        style={style}
-        className="mb-8"
-      >
-        {status === 'PENDING' && (
-          <GoToStripeButton userId={id} type="onboarding" />
-        )}
-        {status === 'ACTIVE' && (
-          <GoToStripeButton userId={id} type="dashboard" />
-        )}
-      </MerchantStatusCard>
+      {/* TODO: merchant status card */}
+      {/*<MerchantStatusCard*/}
+      {/*  title={title}*/}
+      {/*  subtitle={subtitle}*/}
+      {/*  style={style}*/}
+      {/*  className="mb-8"*/}
+      {/*>*/}
+      {/*  {status === 'PENDING' && (*/}
+      {/*    <GoToStripeButton userId={id} type="onboarding" />*/}
+      {/*  )}*/}
+      {/*  {status === 'ACTIVE' && (*/}
+      {/*    <GoToStripeButton userId={id} type="dashboard" />*/}
+      {/*  )}*/}
+      {/*</MerchantStatusCard>*/}
 
-      {status === 'ACTIVE' && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-medium mb-2">Configure Your Product</h2>
-          <MerchantProductCard product={product} />
-        </div>
-      )}
+      <div className="mb-8">
+        <h2 className="text-2xl font-medium mb-2">Configure Your Product</h2>
+        <MerchantProductCard product={product} />
+      </div>
 
-      <ConnectComponentsProvider connectInstance={stripeConnect}>
-        {['PENDING', 'ACTIVE'].includes(status) && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-medium mb-2">Payments</h2>
-            <ConnectPayments />
-          </div>
-        )}
-      </ConnectComponentsProvider>
+      {/* TODO: Connect Payments component */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-medium mb-2">Payments</h2>
+      </div>
     </>
   );
 };
