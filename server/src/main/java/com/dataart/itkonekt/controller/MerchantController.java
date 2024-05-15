@@ -79,8 +79,13 @@ public class MerchantController {
   }
 
   private Optional<Merchant> createMerchant(CreateMerchantAccountRequest request) {
-    // TODO: create Connect account for the merchant
-    return Optional.of(merchantRepository.save(toMerchant(request)));
+    return Optional.of(merchantRepository.save(toMerchant(request)))
+        .flatMap(merchant ->
+            stripeApi.createConnectAccount(merchant).map(connectAccountId -> {
+              merchant.setStripeAccountId(connectAccountId);
+              return merchantRepository.save(merchant);
+            })
+        );
   }
 
   private static Merchant toMerchant(CreateMerchantAccountRequest request) {

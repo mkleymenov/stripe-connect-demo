@@ -56,8 +56,16 @@ public class CustomerController {
   @PostMapping("/customers/{customerId}/checkout")
   public ResponseEntity<?> createCheckoutSession(@PathVariable("customerId") Integer customerId,
                                                  @RequestBody CreateCheckoutSessionRequest request) {
-    // TODO: create a Stripe Checkout session for a customer and a price
-    return ResponseEntity.internalServerError().body("Not implemented");
+    return customerRepository.findById(customerId)
+        .flatMap(customer ->
+            stripeApi.getPrice(request.stripePriceId())
+                .flatMap(price ->
+                    stripeApi.createCheckoutSession(customer, price, getCustomerHomeUrl(customerId),
+                        APPLICATION_FEE_PERCENT)
+                )
+        )
+        .map(url -> ResponseEntity.created(URI.create(url)).build())
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   @PostMapping("/customers/{customerId}/portal")
@@ -71,8 +79,12 @@ public class CustomerController {
   }
 
   private Optional<Customer> createCustomer(CreateCustomerRequest request) {
-    // TODO: create Stripe Customer
-    return Optional.of(customerRepository.save(toCustomer(request)));
+    return Optional.of(customerRepository.save(toCustomer(request)))
+        .flatMap(customer ->
+            stripeApi.createCustomer(customer).map(stripeCustomerId -> {
+              customer.setStripeCustomerId(stripeCustomerId);
+              return customerRepository.save(customer);
+            }));
   }
 
   private static String getCustomerHomeUrl(Integer customerId) {

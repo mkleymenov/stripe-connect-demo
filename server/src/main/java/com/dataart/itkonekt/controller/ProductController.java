@@ -53,13 +53,16 @@ public class ProductController {
   }
 
   private Optional<Price> createFirstPrice(Merchant merchant, CreateProductRequest request) {
-    // TODO: create Product and Price
-    return Optional.empty();
+    return stripeApi.createMerchantProduct(merchant)
+        .flatMap(stripeProductId -> stripeApi.createPrice(stripeProductId, request));
   }
 
   private Optional<Price> replacePrice(Price oldPrice, CreateProductRequest request) {
-    // TODO: create the new Price and archive the old Price
-    return Optional.empty();
+    return stripeApi.createPrice(oldPrice.getProduct(), request)
+        .map(price -> {
+          stripeApi.disablePrice(oldPrice.getId());
+          return price;
+        });
   }
 
   private static Product toProduct(Price price) {

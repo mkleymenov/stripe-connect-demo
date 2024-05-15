@@ -154,10 +154,13 @@ const MerchantRoute: FC = () => {
         </div>
       )}
 
-      {/* TODO: ConnectComponentsProvider */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-medium mb-2">Payments</h2>
-      </div>
+      {/* TODO: Connect Payments widget */}
+      {/*<ConnectComponentsProvider connectInstance={connectInstance}>*/}
+      {/*  <div className="mb-8">*/}
+      {/*    <h2 className="text-2xl font-medium mb-2">Payments</h2>*/}
+      {/*    <ConnectPayments />*/}
+      {/*  </div>*/}
+      {/*</ConnectComponentsProvider>*/}
     </>
   );
 };

@@ -6,10 +6,12 @@ import com.dataart.itkonekt.model.CreateProductRequest;
 import com.stripe.Stripe;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
+import com.stripe.model.AccountSession;
 import com.stripe.model.Event;
 import com.stripe.model.LoginLink;
 import com.stripe.model.Price;
 import com.stripe.model.StripeObject;
+import com.stripe.param.AccountSessionCreateParams;
 import com.stripe.param.PriceListParams;
 import com.stripe.param.PriceRetrieveParams;
 import com.stripe.param.PriceUpdateParams;
@@ -90,7 +92,14 @@ public class StripeApi {
    */
   public Optional<String> createConnectAccountSession(String stripeAccountId) {
     try {
-      throw new RuntimeException("createConnectAccountSession not implemented");
+      var params = AccountSessionCreateParams.builder()
+          .setAccount(stripeAccountId)
+          .setComponents(AccountSessionCreateParams.Components.builder()
+              .setPayments(AccountSessionCreateParams.Components.Payments.builder().setEnabled(true).build())
+              .build())
+          .build();
+
+      return Optional.of(stripeClient.accountSessions().create(params)).map(AccountSession::getClientSecret);
     } catch (Exception ex) {
       LOG.error("Couldn't create session for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
