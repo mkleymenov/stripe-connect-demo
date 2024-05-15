@@ -7,8 +7,12 @@ import com.stripe.Stripe;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
+import com.stripe.model.LoginLink;
 import com.stripe.model.Price;
 import com.stripe.model.StripeObject;
+import com.stripe.param.PriceListParams;
+import com.stripe.param.PriceRetrieveParams;
+import com.stripe.param.PriceUpdateParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Service
 public class StripeApi {
@@ -39,8 +44,7 @@ public class StripeApi {
    */
   public Optional<String> createConnectAccount(Merchant merchant) {
     try {
-      // TODO
-      return Optional.empty();
+      throw new RuntimeException("createConnectAccount not implemented");
     } catch (Exception ex) {
       LOG.error("Couldn't create Stripe account for merchant {}", merchant.getId(), ex);
       return Optional.empty();
@@ -56,8 +60,7 @@ public class StripeApi {
    */
   public Optional<String> createConnectOnboardingLink(String stripeAccountId, String returnUrl) {
     try {
-      // TODO
-      return Optional.empty();
+      throw new RuntimeException("createConnectOnboardingLink not implemented");
     } catch (Exception ex) {
       LOG.error("Couldn't create onboarding link for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
@@ -72,8 +75,7 @@ public class StripeApi {
    */
   public Optional<String> createConnectDashboardLink(String stripeAccountId) {
     try {
-      // TODO
-      return Optional.empty();
+      return Optional.of(stripeClient.accounts().loginLinks().create(stripeAccountId)).map(LoginLink::getUrl);
     } catch (Exception ex) {
       LOG.error("Couldn't create login link for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
@@ -88,8 +90,7 @@ public class StripeApi {
    */
   public Optional<String> createConnectAccountSession(String stripeAccountId) {
     try {
-      // TODO
-      return Optional.empty();
+      throw new RuntimeException("createConnectAccountSession not implemented");
     } catch (Exception ex) {
       LOG.error("Couldn't create session for Stripe account {}", stripeAccountId, ex);
       return Optional.empty();
@@ -104,8 +105,7 @@ public class StripeApi {
    */
   public Optional<String> createCustomer(Customer customer) {
     try {
-      // TODO
-      return Optional.empty();
+      throw new RuntimeException("createCustomer not implemented");
     } catch (Exception ex) {
       LOG.error("Couldn't create Stripe customer for app customer {}", customer.getId(), ex);
       return Optional.empty();
@@ -126,8 +126,7 @@ public class StripeApi {
   public Optional<String> createCheckoutSession(Customer customer, Price stripePrice, String returnUrl,
                                                 double applicationFee) {
     try {
-      // TODO
-      return Optional.empty();
+      throw new RuntimeException("createCheckoutSession not implemented");
     } catch (Exception ex) {
       LOG.error("Couldn't create Checkout session for customer {}", customer.getId(), ex);
       return Optional.empty();
@@ -143,8 +142,13 @@ public class StripeApi {
    */
   public Optional<String> createBillingPortalSession(String stripeCustomerId, String returnUrl) {
     try {
-      // TODO
-      return Optional.empty();
+      var params = com.stripe.param.billingportal.SessionCreateParams.builder()
+          .setCustomer(stripeCustomerId)
+          .setReturnUrl(returnUrl)
+          .build();
+
+      return Optional.of(stripeClient.billingPortal().sessions().create(params))
+          .map(com.stripe.model.billingportal.Session::getUrl);
     } catch (Exception ex) {
       LOG.error("Couldn't create billing portal session for Stripe customer {}", stripeCustomerId, ex);
       return Optional.empty();
@@ -159,8 +163,9 @@ public class StripeApi {
    */
   public Optional<Price> getPrice(String stripePriceId) {
     try {
-      // TODO
-      return Optional.empty();
+      var params = PriceRetrieveParams.builder().addExpand("product").build();
+
+      return Optional.of(stripeClient.prices().retrieve(stripePriceId, params));
     } catch (Exception ex) {
       LOG.error("Couldn't retrieve Stripe price {}", stripePriceId, ex);
       return Optional.empty();
@@ -175,27 +180,13 @@ public class StripeApi {
    */
   public Stream<Price> listActivePrices(Optional<Integer> merchantId) {
     try {
-      // TODO
-      return Stream.empty();
+      var params = PriceListParams.builder().setActive(true).addExpand("data.product");
+      merchantId.map(Object::toString).ifPresent(params::addLookupKey);
+
+      return StreamSupport.stream(stripeClient.prices().list(params.build()).autoPagingIterable().spliterator(), false);
     } catch (Exception ex) {
       LOG.error("Couldn't fetch prices from Stripe", ex);
       return Stream.empty();
-    }
-  }
-
-  /**
-   * Finds an active price belonging to the specified merchant.
-   *
-   * @param merchantId merchant account ID
-   * @return Stripe Price object
-   */
-  public Optional<Price> findMerchantPrice(Integer merchantId) {
-    try {
-      // TODO
-      return Optional.empty();
-    } catch (Exception ex) {
-      LOG.error("Couldn't list prices for merchant {}", merchantId, ex);
-      return Optional.empty();
     }
   }
 
@@ -207,8 +198,7 @@ public class StripeApi {
    */
   public Optional<String> createMerchantProduct(Merchant merchant) {
     try {
-      // TODO
-      return Optional.empty();
+      throw new RuntimeException("createMerchantProduct not implemented");
     } catch (Exception ex) {
       LOG.error("Couldn't create product for merchant {}", merchant.getId(), ex);
       return Optional.empty();
@@ -224,8 +214,7 @@ public class StripeApi {
    */
   public Optional<Price> createPrice(String stripeProductId, CreateProductRequest request) {
     try {
-      // TODO
-      return Optional.empty();
+      throw new RuntimeException("createPrice not implemented");
     } catch (Exception ex) {
       LOG.error("Couldn't create price for product {} and merchant {}", stripeProductId, request.merchantId(), ex);
       return Optional.empty();
@@ -239,7 +228,9 @@ public class StripeApi {
    */
   public void disablePrice(String stripePriceId) {
     try {
-      // TODO
+      var params = PriceUpdateParams.builder().setActive(false).build();
+
+      stripeClient.prices().update(stripePriceId, params);
     } catch (Exception ex) {
       LOG.error("Couldn't update price {}", stripePriceId, ex);
     }
@@ -254,8 +245,7 @@ public class StripeApi {
    */
   public Optional<Event> verifyEvent(String payload, String signature) {
     try {
-      // TODO
-      return Optional.empty();
+      return Optional.ofNullable(stripeClient.constructEvent(payload, signature, webhookSecret));
     } catch (Exception ex) {
       LOG.error("Couldn't verify Stripe event '{}'. Signature: '{}'", payload, signature, ex);
       return Optional.empty();

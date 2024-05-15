@@ -21,6 +21,8 @@ import java.util.Optional;
 @RequestMapping(consumes = "application/json", produces = "application/json")
 public class CustomerController {
   private static final String CUSTOMER_HOME_PAGE = "http://localhost:3000/customer/";
+  // Application fee as percent of a total purchase amount
+  private static final double APPLICATION_FEE_PERCENT = 10.0;
 
   private final CustomerRepository customerRepository;
   private final StripeApi stripeApi;
@@ -60,20 +62,27 @@ public class CustomerController {
 
   @PostMapping("/customers/{customerId}/portal")
   public ResponseEntity<?> createPortalSession(@PathVariable("customerId") Integer customerId) {
-    // TODO: create a Stripe Billing Portal session for a customer
-    return ResponseEntity.internalServerError().body("Not implemented");
+    return customerRepository.findById(customerId)
+        .map(Customer::getStripeCustomerId)
+        .flatMap(stripeCustomerId ->
+            stripeApi.createBillingPortalSession(stripeCustomerId, getCustomerHomeUrl(customerId)))
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   private Optional<Customer> createCustomer(CreateCustomerRequest request) {
-    var customer = new Customer();
-    customer.setName(request.name());
-    customer.setEmail(request.email());
-
     // TODO: create Stripe Customer
-    return Optional.of(customerRepository.save(customer));
+    return Optional.of(customerRepository.save(toCustomer(request)));
   }
 
   private static String getCustomerHomeUrl(Integer customerId) {
     return CUSTOMER_HOME_PAGE + customerId;
+  }
+
+  private static Customer toCustomer(CreateCustomerRequest request) {
+    var customer = new Customer();
+    customer.setName(request.name());
+    customer.setEmail(request.email());
+    return customer;
   }
 }

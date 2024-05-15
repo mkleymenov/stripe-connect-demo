@@ -11,10 +11,13 @@ import {
   getMerchant,
   getProducts,
 } from '../api-routes';
-import { Props as MerchantStatusCardProps } from '../components/MerchantStatusCard';
+import MerchantStatusCard, {
+  Props as MerchantStatusCardProps,
+} from '../components/MerchantStatusCard';
 import MerchantProductCard, {
   parseFormData,
 } from '../components/MerchantProductCard';
+import GoToStripeButton from '../components/GoToStripeButton';
 
 type MerchantLoaderData = {
   merchant: Merchant;
@@ -120,7 +123,7 @@ const MerchantRoute: FC = () => {
   const { id, businessName, status } = merchant;
   const { title, subtitle, style } = MERCHANT_STATUS_CARDS[status];
 
-  // TODO: initialize Stripe Connect JS instance
+  // TODO: loadConnectAndInitialize
 
   return (
     <>
@@ -130,27 +133,28 @@ const MerchantRoute: FC = () => {
 
       <h1 className="text-3xl text-grey-primary mb-8">{businessName}</h1>
 
-      {/* TODO: merchant status card */}
-      {/*<MerchantStatusCard*/}
-      {/*  title={title}*/}
-      {/*  subtitle={subtitle}*/}
-      {/*  style={style}*/}
-      {/*  className="mb-8"*/}
-      {/*>*/}
-      {/*  {status === 'PENDING' && (*/}
-      {/*    <GoToStripeButton userId={id} type="onboarding" />*/}
-      {/*  )}*/}
-      {/*  {status === 'ACTIVE' && (*/}
-      {/*    <GoToStripeButton userId={id} type="dashboard" />*/}
-      {/*  )}*/}
-      {/*</MerchantStatusCard>*/}
+      <MerchantStatusCard
+        title={title}
+        subtitle={subtitle}
+        style={style}
+        className="mb-8"
+      >
+        {status === 'PENDING' && (
+          <GoToStripeButton userId={id} type="onboarding" />
+        )}
+        {['ACTIVE', 'IN_REVIEW'].includes(status) && (
+          <GoToStripeButton userId={id} type="dashboard" />
+        )}
+      </MerchantStatusCard>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-medium mb-2">Configure Your Product</h2>
-        <MerchantProductCard product={product} />
-      </div>
+      {['ACTIVE', 'IN_REVIEW'].includes(status) && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-medium mb-2">Configure Your Product</h2>
+          <MerchantProductCard product={product} />
+        </div>
+      )}
 
-      {/* TODO: Connect Payments component */}
+      {/* TODO: ConnectComponentsProvider */}
       <div className="mb-8">
         <h2 className="text-2xl font-medium mb-2">Payments</h2>
       </div>

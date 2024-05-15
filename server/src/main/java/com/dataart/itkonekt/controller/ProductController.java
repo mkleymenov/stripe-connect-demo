@@ -1,9 +1,13 @@
 package com.dataart.itkonekt.controller;
 
+import com.dataart.itkonekt.entity.Merchant;
+import com.dataart.itkonekt.model.BillingInterval;
 import com.dataart.itkonekt.model.CreateProductRequest;
 import com.dataart.itkonekt.model.Product;
+import com.dataart.itkonekt.model.ProductRecurrence;
 import com.dataart.itkonekt.repository.MerchantRepository;
 import com.dataart.itkonekt.stripe.StripeApi;
+import com.stripe.model.Price;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,13 +34,46 @@ public class ProductController {
 
   @GetMapping("/products")
   public List<Product> getProducts(@RequestParam Optional<Integer> merchantId) {
-    // TODO: get a list of merchant's active Stripe Products
-    return List.of();
+    return stripeApi.listActivePrices(merchantId)
+        .map(ProductController::toProduct)
+        .toList();
   }
 
   @PostMapping("/products")
   public ResponseEntity<?> createProduct(@RequestBody CreateProductRequest request) {
-    // TODO: Create a new Stripe Product and a Price or replace an existing Price for the same Product
-    return ResponseEntity.internalServerError().body("Not implemented");
+    return merchantRepository.findById(request.merchantId())
+        .flatMap(merchant ->
+            stripeApi.listActivePrices(Optional.of(merchant.getId())).findFirst()
+                .map(oldPrice -> replacePrice(oldPrice, request))
+                .orElseGet(() -> createFirstPrice(merchant, request))
+        )
+        .map(ProductController::toProduct)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
+  }
+
+  private Optional<Price> createFirstPrice(Merchant merchant, CreateProductRequest request) {
+    // TODO: create Product and Price
+    return Optional.empty();
+  }
+
+  private Optional<Price> replacePrice(Price oldPrice, CreateProductRequest request) {
+    // TODO: create the new Price and archive the old Price
+    return Optional.empty();
+  }
+
+  private static Product toProduct(Price price) {
+    var recurrence = Optional.ofNullable(price.getRecurring()).map(rec -> {
+      var interval = BillingInterval.fromStripeInterval(rec.getInterval());
+      return new ProductRecurrence(interval, rec.getIntervalCount());
+    });
+
+    return new Product(
+        price.getId(),
+        price.getProductObject().getName(),
+        price.getUnitAmount(),
+        price.getCurrency(),
+        recurrence
+    );
   }
 }

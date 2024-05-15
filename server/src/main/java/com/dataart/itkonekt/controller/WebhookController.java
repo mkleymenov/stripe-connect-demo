@@ -4,6 +4,7 @@ import com.dataart.itkonekt.entity.Merchant;
 import com.dataart.itkonekt.repository.MerchantRepository;
 import com.dataart.itkonekt.stripe.StripeApi;
 import com.stripe.model.Account;
+import com.stripe.model.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,24 @@ public class WebhookController {
 
   @PostMapping("/webhook")
   public ResponseEntity<?> webhook(HttpEntity<String> request) {
-    // TODO: verify and process Stripe event
-    return ResponseEntity.ok().build();
+    var payload = request.getBody();
+    var signature = request.getHeaders().getFirst(STRIPE_SIGNATURE);
+
+    return stripeApi.verifyEvent(payload, signature)
+        .map(event -> {
+          processEvent(event);
+          return ResponseEntity.ok().build();
+        })
+        .orElseGet(() -> ResponseEntity.badRequest().build());
+  }
+
+  private void processEvent(Event event) {
+    LOG.info("Received Stripe event {}", event.getType());
+
+    switch (event.getType()) {
+      // TODO: handle Account events
+      default -> LOG.info("No handler for event of type {}", event.getType());
+    }
   }
 
   private static Merchant.Status getMerchantStatus(Account account) {

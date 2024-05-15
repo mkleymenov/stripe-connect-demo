@@ -52,27 +52,35 @@ public class MerchantController {
 
   @PostMapping("/merchants/{merchantId}/onboarding")
   public ResponseEntity<?> createOnboardingLink(@PathVariable("merchantId") Integer merchantId) {
-    // TODO: create Connect onboarding link for the merchant
-    return ResponseEntity.internalServerError().body("Not implemented");
+    return merchantRepository.findById(merchantId)
+        .map(Merchant::getStripeAccountId)
+        .flatMap(stripeAccountId -> stripeApi.createConnectOnboardingLink(stripeAccountId,
+            getMerchantHomeUrl(merchantId)))
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   @PostMapping("/merchants/{merchantId}/dashboard")
   public ResponseEntity<?> createDashboardLink(@PathVariable("merchantId") Integer merchantId) {
-    // TODO: create Express Dashboard link for the merchant
-    return ResponseEntity.internalServerError().body("Not implemented");
+    return merchantRepository.findById(merchantId)
+        .map(Merchant::getStripeAccountId)
+        .flatMap(stripeApi::createConnectDashboardLink)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   @PostMapping("/merchants/{merchantId}/session")
   public ResponseEntity<?> createAccountSession(@PathVariable("merchantId") Integer merchantId) {
-    // TODO: create Connect account session for the merchant
-    return ResponseEntity.internalServerError().body("Not implemented");
+    return merchantRepository.findById(merchantId)
+        .map(Merchant::getStripeAccountId)
+        .flatMap(stripeApi::createConnectAccountSession)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   private Optional<Merchant> createMerchant(CreateMerchantAccountRequest request) {
-    var merchant = merchantRepository.save(toMerchant(request));
-
     // TODO: create Connect account for the merchant
-    return Optional.of(merchant);
+    return Optional.of(merchantRepository.save(toMerchant(request)));
   }
 
   private static Merchant toMerchant(CreateMerchantAccountRequest request) {
